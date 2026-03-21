@@ -1,0 +1,308 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<prgs:model xmlns:prgs="http://www.progress.com/caf/camel/component/prgrs" id="resourceModel">
+  <prgs:resource consumes="application/json" name="_aliveserver" path="/aliveserver" produces="application/json">
+    <prgs:operation consumes="application/json" idls="easyrest.restoe::com.progress.openedge.pdt.bpmbindings" name="aliveserver" produces="application/json" verb="GET">
+      <prgs:param name="accessId" type="QUERY"/>
+    </prgs:operation>
+  </prgs:resource>
+  <prgs:resource consumes="application/json" name="_reservation_insertupdatereservation" path="/reservation/insertupdatereservation" produces="application/json">
+    <prgs:operation consumes="application/json" idls="easyrest.restoe::com.progress.openedge.pdt.bpmbindings" name="postreservation" produces="application/json" verb="POST">
+      <prgs:param name="accessId" type="QUERY"/>
+    </prgs:operation>
+  </prgs:resource>
+  <prgs:resource consumes="application/json" name="_techarticledata" path="/techarticledata" produces="application/json">
+    <prgs:operation consumes="application/json" idls="easyrest.restoe::com.progress.openedge.pdt.bpmbindings" name="techarticledata_get" produces="application/json" verb="GET">
+      <prgs:param name="access_id" type="QUERY"/>
+      <prgs:param name="easyrent_barcode" type="QUERY"/>
+    </prgs:operation>
+    <prgs:operation consumes="application/json" idls="easyrest.restoe::com.progress.openedge.pdt.bpmbindings" name="techarticledata_post" produces="application/json" verb="POST">
+      <prgs:param name="access_id" type="QUERY"/>
+    </prgs:operation>
+  </prgs:resource>
+  <prgs:resource consumes="application/json" name="_getarticlesrented" path="/getarticlesrented" produces="application/json">
+    <prgs:operation consumes="application/json" idls="easyrest.restoe::com.progress.openedge.pdt.bpmbindings" name="getarticlesrented" produces="application/json" verb="GET">
+      <prgs:param name="accessid" type="QUERY"/>
+      <prgs:param name="reservationbarcode" type="QUERY"/>
+    </prgs:operation>
+  </prgs:resource>
+  <prgs:resource consumes="application/json" name="_journals" path="/journals" produces="application/json">
+    <prgs:operation consumes="application/json" idls="easyrest.restoe::com.progress.openedge.pdt.bpmbindings" name="journals" produces="application/json" verb="GET">
+      <prgs:param name="accessId" type="QUERY"/>
+      <prgs:param name="createdAt" type="QUERY"/>
+    </prgs:operation>
+  </prgs:resource>
+  <prgs:resource consumes="application/json" name="_reservation_getavailcount" path="/reservation/getavailcount" produces="application/json">
+    <prgs:operation consumes="application/json" idls="easyrest.restoe::com.progress.openedge.pdt.bpmbindings" name="getavailcount" produces="application/json" verb="POST">
+      <prgs:param name="accessId" type="QUERY"/>
+    </prgs:operation>
+  </prgs:resource>
+  <prgs:resource consumes="application/json" name="_getProducts" path="/getProducts" produces="application/json">
+    <prgs:operation consumes="application/json" idls="easyrest.restoe::com.progress.openedge.pdt.bpmbindings" name="getproducts" produces="application/json" verb="GET">
+      <prgs:param name="accessId" type="QUERY"/>
+    </prgs:operation>
+  </prgs:resource>
+  <prgs:resource consumes="application/json" name="_getProduct_productId" path="/getProduct/{productId}" produces="application/json">
+    <prgs:operation consumes="application/json" idls="easyrest.restoe::com.progress.openedge.pdt.bpmbindings" name="getproduct" produces="application/json" verb="GET">
+      <prgs:param name="productId" type="PATH"/>
+      <prgs:param name="accessId" type="QUERY"/>
+    </prgs:operation>
+  </prgs:resource>
+  <prgs:resource consumes="application/json" name="_cart_cartId" path="/cart/{cartId}" produces="application/json">
+    <prgs:operation consumes="application/json" idls="easyrest.restoe::com.progress.openedge.pdt.bpmbindings" name="createorupdatecart" produces="application/json" verb="PUT">
+      <prgs:param name="cartId" type="PATH"/>
+      <prgs:param name="accessId" type="QUERY"/>
+    </prgs:operation>
+  </prgs:resource>
+  <prgs:resource consumes="application/json" name="_replication_sendfile" path="/replication/sendrepfile" produces="application/json">
+    <prgs:operation consumes="application/json" idls="easyrest.restoe::com.progress.openedge.pdt.bpmbindings" name="sendrepfile" produces="application/json" verb="POST">
+      <prgs:param name="accessId" type="QUERY"/>
+      <prgs:param name="fileName" type="QUERY"/>
+    </prgs:operation>
+  </prgs:resource>
+  <prgs:resource consumes="application/json" name="_replication_getfile" path="/replication/getrepfile" produces="application/json">
+    <prgs:operation consumes="application/json" idls="easyrest.restoe::com.progress.openedge.pdt.bpmbindings" name="getrepfile" produces="application/json" verb="GET">
+      <prgs:param name="accessId" type="QUERY"/>
+      <prgs:param name="fileNo" type="QUERY"/>
+    </prgs:operation>
+  </prgs:resource>
+  <prgs:resource consumes="application/json" name="_getProductsAvailable" path="/getProductsAvailable" produces="application/json">
+    <prgs:operation consumes="application/json" idls="easyrest.restoe::com.progress.openedge.pdt.bpmbindings" name="getproductsavailable" produces="application/json" verb="POST">
+      <prgs:param name="accessId" type="QUERY"/>
+    </prgs:operation>
+  </prgs:resource>
+  <prgs:resource consumes="application/json" name="_isatde_serviceOrders_orderId" path="/isatde/serviceOrders/{orderId}" produces="application/json">
+    <prgs:operation consumes="application/json" idls="easyrest.restoe::com.progress.openedge.pdt.bpmbindings" name="serviceordersquery" produces="application/json" verb="GET">
+      <prgs:param name="orderId" type="PATH"/>
+      <prgs:param name="accessId" type="COOKIE"/>
+      <prgs:param name="storeId" type="HEADER"/>
+      <prgs:param name="accessToken" type="QUERY"/>
+    </prgs:operation>
+  </prgs:resource>
+  <prgs:resource consumes="application/json" name="_isatde_serviceOrders_orderId_settle" path="/isatde/serviceOrders/{orderId}/settle" produces="application/json">
+    <prgs:operation consumes="application/json" idls="easyrest.restoe::com.progress.openedge.pdt.bpmbindings" name="serviceordersettle" produces="application/json" verb="PUT">
+      <prgs:param name="orderId" type="PATH"/>
+      <prgs:param name="accessToken" type="QUERY"/>
+    </prgs:operation>
+  </prgs:resource>
+  <prgs:resource consumes="application/json" name="_replication_sendclstatus" path="/replication/sendrepstatus" produces="application/json">
+    <prgs:operation consumes="application/json" idls="easyrest.restoe::com.progress.openedge.pdt.bpmbindings" name="sendrepstatus" produces="application/json" verb="POST">
+      <prgs:param name="accessId" type="QUERY"/>
+      <prgs:param name="clientNum" type="QUERY"/>
+    </prgs:operation>
+  </prgs:resource>
+  <prgs:resource consumes="application/json" name="_replication_startclcycle" path="/replication/startrepcycle" produces="application/json">
+    <prgs:operation consumes="application/json" idls="easyrest.restoe::com.progress.openedge.pdt.bpmbindings" name="startrepcycle" produces="application/json" verb="GET">
+      <prgs:param name="accessId" type="QUERY"/>
+      <prgs:param name="clientNum" type="QUERY"/>
+    </prgs:operation>
+  </prgs:resource>
+  <prgs:resource consumes="application/json" name="_replication_sendrepblob" path="/replication/sendrepblob" produces="application/json">
+    <prgs:operation consumes="application/json" idls="easyrest.restoe::com.progress.openedge.pdt.bpmbindings" name="sendrepblob" produces="application/json" verb="POST">
+      <prgs:param name="accessId" type="QUERY"/>
+      <prgs:param name="byteCount" type="QUERY"/>
+      <prgs:param name="blobIdent" type="QUERY"/>
+    </prgs:operation>
+  </prgs:resource>
+  <prgs:resource consumes="application/json" name="_reservation_testaccess" path="/testaccess" produces="application/json">
+    <prgs:operation consumes="application/json" idls="easyrest.restoe::com.progress.openedge.pdt.bpmbindings" name="testaccess" produces="application/json" verb="GET">
+      <prgs:param name="accessId" type="QUERY"/>
+      <prgs:param name="testType" type="QUERY"/>
+    </prgs:operation>
+  </prgs:resource>
+  <prgs:resource consumes="application/json" name="_reservation_reservablearticles" path="/reservation/reservablearticles" produces="application/json">
+    <prgs:operation consumes="application/json" idls="easyrest.restoe::com.progress.openedge.pdt.bpmbindings" name="reservablearticles" produces="application/json" verb="GET">
+      <prgs:param name="accessId" type="QUERY"/>
+    </prgs:operation>
+  </prgs:resource>
+  <prgs:resource consumes="application/json" name="_reservation_getavailcountdt" path="/reservation/getavailcountdt" produces="application/json">
+    <prgs:operation consumes="application/json" idls="easyrest.restoe::com.progress.openedge.pdt.bpmbindings" name="getavailcountdt" produces="application/json" verb="POST">
+      <prgs:param name="accessId" type="QUERY"/>
+    </prgs:operation>
+  </prgs:resource>
+  <prgs:resource consumes="application/json" name="_replication_getblobdata" path="/replication/getblobdata" produces="application/json">
+    <prgs:operation consumes="application/json" idls="easyrest.restoe::com.progress.openedge.pdt.bpmbindings" name="getBlobData" produces="application/json" verb="GET">
+      <prgs:param name="accessId" type="QUERY"/>
+      <prgs:param name="rawObjectIdent" type="QUERY"/>
+    </prgs:operation>
+  </prgs:resource>
+  <prgs:resource consumes="application/json" name="_rentalarticle" path="/rentalarticle" produces="application/json">
+    <prgs:operation consumes="application/json" idls="easyrest.restoe::com.progress.openedge.pdt.bpmbindings" name="rentalarticle" produces="application/json" verb="PUT">
+      <prgs:param name="rentalarticlecode" type="QUERY"/>
+      <prgs:param name="accessId" type="QUERY"/>
+    </prgs:operation>
+  </prgs:resource>
+  <prgs:resource consumes="application/json" name="_calendar_getAvailability" path="/calendar/getAvailability" produces="application/json">
+    <prgs:operation consumes="application/json" idls="easyrest.restoe::com.progress.openedge.pdt.bpmbindings" name="getavailability" produces="application/json" verb="POST">
+      <prgs:param name="accessId" type="QUERY"/>
+    </prgs:operation>
+  </prgs:resource>
+  <prgs:resource consumes="application/json" name="_calendar_getEquipmentTypes" path="/calendar/getEquipmentTypes" produces="application/json">
+    <prgs:operation consumes="application/json" idls="easyrest.restoe::com.progress.openedge.pdt.bpmbindings" name="getequipmenttypes" produces="application/json" verb="GET">
+      <prgs:param name="accessId" type="QUERY"/>
+    </prgs:operation>
+  </prgs:resource>
+  <prgs:resource consumes="application/json" name="_calendar_getRentalGroups" path="/calendar/getRentalGroups" produces="application/json">
+    <prgs:operation consumes="application/json" idls="easyrest.restoe::com.progress.openedge.pdt.bpmbindings" name="getrentalgroups" produces="application/json" verb="GET">
+      <prgs:param name="accessId" type="QUERY"/>
+    </prgs:operation>
+  </prgs:resource>
+  <prgs:resource consumes="application/json" name="_customers" path="/customers" produces="application/json">
+    <prgs:operation consumes="application/json" idls="easyrest.restoe::com.progress.openedge.pdt.bpmbindings" name="customers_get" produces="application/json" verb="GET">
+      <prgs:param name="accessId" type="QUERY"/>
+      <prgs:param name="top" type="QUERY"/>
+      <prgs:param name="skip" type="QUERY"/>
+      <prgs:param name="customerId" type="QUERY"/>
+      <prgs:param name="customerCode" type="QUERY"/>
+      <prgs:param name="customerIdExternal" type="QUERY"/>
+      <prgs:param name="groupCustomerId" type="QUERY"/>
+      <prgs:param name="groupCustomerCode" type="QUERY"/>
+      <prgs:param name="groupCustomerIdExternal" type="QUERY"/>
+      <prgs:param name="firstName" type="QUERY"/>
+      <prgs:param name="lastName" type="QUERY"/>
+      <prgs:param name="postalCode" type="QUERY"/>
+      <prgs:param name="dateOfBirth" type="QUERY"/>
+      <prgs:param name="changedAfter" type="QUERY"/>
+    </prgs:operation>
+  </prgs:resource>
+  <prgs:resource consumes="application/json" name="_branches" path="/branches" produces="application/json">
+    <prgs:operation consumes="application/json" idls="easyrest.restoe::com.progress.openedge.pdt.bpmbindings" name="branches_get" produces="application/json" verb="GET">
+      <prgs:param name="accessId" type="QUERY"/>
+      <prgs:param name="top" type="QUERY"/>
+      <prgs:param name="skip" type="QUERY"/>
+      <prgs:param name="branchId" type="QUERY"/>
+      <prgs:param name="branchCode" type="QUERY"/>
+      <prgs:param name="branchIdExternal" type="QUERY"/>
+    </prgs:operation>
+  </prgs:resource>
+  <prgs:resource consumes="application/json" name="_zreports" path="/zreports" produces="application/json">
+    <prgs:operation consumes="application/json" idls="easyrest.restoe::com.progress.openedge.pdt.bpmbindings" name="zreports_get" produces="application/json" verb="GET">
+      <prgs:param name="accessId" type="QUERY"/>
+      <prgs:param name="cashDeskId" type="QUERY"/>
+      <prgs:param name="branchId" type="QUERY"/>
+      <prgs:param name="createdAfter" type="QUERY"/>
+      <prgs:param name="createdBefore" type="QUERY"/>
+      <prgs:param name="includePaymentDetails" type="QUERY"/>
+    </prgs:operation>
+  </prgs:resource>
+  <prgs:resource consumes="application/json" name="_eggetlist" path="/eggetlist" produces="application/json">
+    <prgs:operation consumes="application/json" idls="easyrest.restoe::com.progress.openedge.pdt.bpmbindings" name="eggetlist" produces="application/json" verb="GET">
+      <prgs:param name="Type" type="QUERY"/>
+      <prgs:param name="FilialeID" type="QUERY"/>
+      <prgs:param name="CustCount" type="QUERY"/>
+      <prgs:param name="WithTextCount" type="QUERY"/>
+      <prgs:param name="UseAltText" type="QUERY"/>
+      <prgs:param name="UseAltTextMix" type="QUERY"/>
+      <prgs:param name="GetVandraInfo" type="QUERY"/>
+      <prgs:param name="NotShowMembers" type="QUERY"/>
+      <prgs:param name="AbbrLastname" type="QUERY"/>
+      <prgs:param name="CallingBench" type="QUERY"/>
+    </prgs:operation>
+  </prgs:resource>
+  <prgs:resource consumes="application/json" name="_hotels" path="/hotels" produces="application/json">
+    <prgs:operation consumes="application/json" idls="easyrest.restoe::com.progress.openedge.pdt.bpmbindings" name="hotels_get" produces="application/json" verb="GET">
+      <prgs:param name="accessId" type="QUERY"/>
+      <prgs:param name="top" type="QUERY"/>
+      <prgs:param name="skip" type="QUERY"/>
+      <prgs:param name="hotelId" type="QUERY"/>
+      <prgs:param name="branchId" type="QUERY"/>
+      <prgs:param name="includeCustomerCount" type="QUERY"/>
+    </prgs:operation>
+  </prgs:resource>
+  <prgs:resource consumes="application/json" name="_replication_isreadyforupdate" path="/replication/isreadyforupdate" produces="application/json">
+    <prgs:operation consumes="application/json" idls="easyrest.restoe::com.progress.openedge.pdt.bpmbindings" name="isreadyforupdate" produces="application/json" verb="GET">
+      <prgs:param name="accessId" type="QUERY"/>
+      <prgs:param name="clientNum" type="QUERY"/>
+      <prgs:param name="updatefile" type="QUERY"/>
+      <prgs:param name="lastfileexpmaster" type="QUERY"/>
+      <prgs:param name="lastfileprocclient" type="QUERY"/>
+    </prgs:operation>
+  </prgs:resource>
+  <prgs:resource consumes="application/json" name="_replication_starttaskonclient" path="/replication/starttaskonclient" produces="application/json">
+    <prgs:operation consumes="application/json" idls="easyrest.restoe::com.progress.openedge.pdt.bpmbindings" name="starttaskonclient" produces="application/json" verb="GET">
+      <prgs:param name="accessId" type="QUERY"/>
+      <prgs:param name="clientNum" type="QUERY"/>
+      <prgs:param name="taskproc" type="QUERY"/>
+    </prgs:operation>
+  </prgs:resource>
+  <prgs:resource consumes="application/json" name="_invoices" path="/invoices" produces="application/json">
+    <prgs:operation consumes="application/json" idls="easyrest.restoe::com.progress.openedge.pdt.bpmbindings" name="invoices_get" produces="application/json" verb="GET">
+      <prgs:param name="accessId" type="QUERY"/>
+      <prgs:param name="top" type="QUERY"/>
+      <prgs:param name="skip" type="QUERY"/>
+      <prgs:param name="invoiceId" type="QUERY"/>
+      <prgs:param name="invoiceNumber" type="QUERY"/>
+      <prgs:param name="cashDeskId" type="QUERY"/>
+      <prgs:param name="cashDeskIdExternal" type="QUERY"/>
+      <prgs:param name="createdAfter" type="QUERY"/>
+    </prgs:operation>
+  </prgs:resource>
+  <prgs:resource consumes="application/json" name="_reservation_pushtoeasygate" path="/reservation/pushtoeasygate" produces="application/json">
+    <prgs:operation consumes="application/json" idls="easyrest.restoe::com.progress.openedge.pdt.bpmbindings" name="pushtoeasygate_put" produces="application/json" verb="PUT">
+      <prgs:param name="accessId" type="QUERY"/>
+      <prgs:param name="reservationIdExternal" type="QUERY"/>
+      <prgs:param name="branchId" type="QUERY"/>
+      <prgs:param name="firstName" type="QUERY"/>
+      <prgs:param name="lastName" type="QUERY"/>
+    </prgs:operation>
+  </prgs:resource>
+  <prgs:resource consumes="application/json" name="_travelagencyvouchers" path="/travelagencyvouchers" produces="application/json">
+    <prgs:operation consumes="application/json" idls="easyrest.restoe::com.progress.openedge.pdt.bpmbindings" name="travelagencyvoucher_get" produces="application/json" verb="GET">
+      <prgs:param name="accessId" type="QUERY"/>
+      <prgs:param name="top" type="QUERY"/>
+      <prgs:param name="skip" type="QUERY"/>
+      <prgs:param name="createdAfter" type="QUERY"/>
+      <prgs:param name="branchId" type="QUERY"/>
+      <prgs:param name="travelAgencyId" type="QUERY"/>
+    </prgs:operation>
+  </prgs:resource>
+  <prgs:resource consumes="application/json" name="_reservation_basket_basketid" path="/reservation/basket/{basketid}" produces="application/json">
+    <prgs:operation consumes="application/json" idls="easyrest.restoe::com.progress.openedge.pdt.bpmbindings" name="basket_put" produces="application/json" verb="PUT">
+      <prgs:param name="basketid" type="PATH"/>
+      <prgs:param name="accessId" type="QUERY"/>
+    </prgs:operation>
+    <prgs:operation consumes="application/json" idls="easyrest.restoe::com.progress.openedge.pdt.bpmbindings" name="basket_delete" produces="application/json" verb="DELETE">
+      <prgs:param name="basketid" type="PATH"/>
+      <prgs:param name="accessId" type="QUERY"/>
+    </prgs:operation>
+  </prgs:resource>
+  <prgs:resource consumes="application/json" name="_isatde_reservation" path="/isatde/reservation" produces="application/json">
+    <prgs:operation consumes="application/json" idls="easyrest.restoe::com.progress.openedge.pdt.bpmbindings" name="reservation_get" produces="application/json" verb="GET">
+      <prgs:param name="accessId" type="QUERY"/>
+      <prgs:param name="reservationIdExternal" type="QUERY"/>
+      <prgs:param name="branchId" type="QUERY"/>
+      <prgs:param name="firstName" type="QUERY"/>
+      <prgs:param name="lastName" type="QUERY"/>
+    </prgs:operation>
+  </prgs:resource>
+  <prgs:resource consumes="application/json" name="_isatde_reservationcustomer" path="/isatde/reservationcustomer" produces="application/json">
+    <prgs:operation consumes="application/json" idls="easyrest.restoe::com.progress.openedge.pdt.bpmbindings" name="reservationcustomer_put" produces="application/json" verb="PUT">
+      <prgs:param name="accessId" type="QUERY"/>
+      <prgs:param name="customerId" type="QUERY"/>
+    </prgs:operation>
+  </prgs:resource>
+  <prgs:resource consumes="application/json" name="_rentalarticles" path="/rentalarticles" produces="application/json">
+    <prgs:operation consumes="application/json" idls="easyrest.restoe::com.progress.openedge.pdt.bpmbindings" name="rentalarticles_get" produces="application/json" verb="GET">
+      <prgs:param name="accessId" type="QUERY"/>
+      <prgs:param name="top" type="QUERY"/>
+      <prgs:param name="skip" type="QUERY"/>
+      <prgs:param name="rentalArticleId" type="QUERY"/>
+      <prgs:param name="rentalArticleCode" type="QUERY"/>
+      <prgs:param name="rentalGroupId" type="QUERY"/>
+      <prgs:param name="rentalGroupName" type="QUERY"/>
+      <prgs:param name="modelId" type="QUERY"/>
+      <prgs:param name="modelName" type="QUERY"/>
+      <prgs:param name="modelYear" type="QUERY"/>
+      <prgs:param name="brand" type="QUERY"/>
+      <prgs:param name="rentalArticleStatusId" type="QUERY"/>
+      <prgs:param name="isSold" type="QUERY"/>
+      <prgs:param name="isMultiRent" type="QUERY"/>
+      <prgs:param name="property1" type="QUERY"/>
+      <prgs:param name="property2" type="QUERY"/>
+      <prgs:param name="property3" type="QUERY"/>
+      <prgs:param name="property4" type="QUERY"/>
+      <prgs:param name="property5" type="QUERY"/>
+      <prgs:param name="assignedBranchId" type="QUERY"/>
+      <prgs:param name="locationBranchId" type="QUERY"/>
+    </prgs:operation>
+  </prgs:resource>
+</prgs:model>

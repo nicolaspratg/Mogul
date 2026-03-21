@@ -1,0 +1,389 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans>
+        <mapping:MappingBean  id="mapping" xmlns:mapping="http://www.progress.com/caf/mapping1.0">
+   <![CDATA[<mapping:messageMapping xmlns:conditional="http://www.progress.com/caf/mapping1.0/conditional" xmlns:mapping="http://www.progress.com/caf/mapping1.0">
+<mapping:mapInput>
+
+    <conditional:conditionalRuleSet>
+      <conditional:if condition="${(rest.resourcename == '_reservation_insertupdatereservation') and (rest.operationname == 'postreservation') and (rest.verb == 'POST')}">
+        <mapping:rule action="None" resource="" source="${http.body}" target="${idl.param['reservationData']}" type="INTERFACE_PARAM"/>
+      </conditional:if>
+    </conditional:conditionalRuleSet>
+    <conditional:conditionalRuleSet>
+      <conditional:if condition="${(rest.resourcename == '_techarticledata') and (rest.operationname == 'techarticledata_post') and (rest.verb == 'POST')}">
+        <mapping:rule action="None" resource="" source="${http.body}" target="${idl.param['articleData']}" type="INTERFACE_PARAM"/>
+      </conditional:if>
+    </conditional:conditionalRuleSet>
+    <conditional:conditionalRuleSet>
+      <conditional:if condition="${(rest.resourcename == '_reservation_getavailcount') and (rest.operationname == 'getavailcount') and (rest.verb == 'POST')}">
+        <mapping:rule action="None" resource="" source="${http.body}" target="${idl.param['getavailData']}" type="INTERFACE_PARAM"/>
+      </conditional:if>
+    </conditional:conditionalRuleSet>
+    <conditional:conditionalRuleSet>
+      <conditional:if condition="${(rest.resourcename == '_cart_cartId') and (rest.operationname == 'createorupdatecart') and (rest.verb == 'PUT')}">
+        <mapping:rule action="None" resource="" source="${http.body}" target="${idl.param['cart']}" type="INTERFACE_PARAM"/>
+      </conditional:if>
+    </conditional:conditionalRuleSet>
+    <conditional:conditionalRuleSet>
+      <conditional:if condition="${(rest.resourcename == '_replication_sendfile') and (rest.operationname == 'sendrepfile') and (rest.verb == 'POST')}">
+        <mapping:rule action="None" resource="" source="${http.body}" target="${idl.param['fileContent']}" type="INTERFACE_PARAM"/>
+        <mapping:rule action="None" resource="" source="${rest.queryparam['fileName']}" target="${idl.param['pcFileName']}" type="INTERFACE_PARAM"/>
+      </conditional:if>
+    </conditional:conditionalRuleSet>
+    <conditional:conditionalRuleSet>
+      <conditional:if condition="${(rest.resourcename == '_getProductsAvailable') and (rest.operationname == 'getproductsavailable') and (rest.verb == 'POST')}">
+        <mapping:rule action="None" resource="" source="${http.body}" target="${idl.param['productsCheckAvail']}" type="INTERFACE_PARAM"/>
+      </conditional:if>
+    </conditional:conditionalRuleSet>
+    <conditional:conditionalRuleSet>
+      <conditional:if condition="${(rest.resourcename == '_isatde_serviceOrders_orderId') and (rest.operationname == 'serviceordersquery') and (rest.verb == 'GET')}">
+        <mapping:rule action="None" resource="" source="${rest.queryparam['accessToken']}" target="${idl.param['accessId']}" type="INTERFACE_PARAM"/>
+      </conditional:if>
+    </conditional:conditionalRuleSet>
+    <conditional:conditionalRuleSet>
+      <conditional:if condition="${(rest.resourcename == '_isatde_serviceOrders_orderId_settle') and (rest.operationname == 'serviceordersettle') and (rest.verb == 'PUT')}">
+        <mapping:rule action="None" resource="" source="${http.body}" target="${idl.param['orderSettlement']}" type="INTERFACE_PARAM"/>
+        <mapping:rule action="None" resource="" source="${rest.queryparam['accessToken']}" target="${idl.param['accessId']}" type="INTERFACE_PARAM"/>
+      </conditional:if>
+    </conditional:conditionalRuleSet>
+    <conditional:conditionalRuleSet>
+      <conditional:if condition="${(rest.resourcename == '_replication_sendclstatus') and (rest.operationname == 'sendrepstatus') and (rest.verb == 'POST')}">
+        <mapping:rule action="None" resource="" source="${http.body}" target="${idl.param['clientStatus']}" type="INTERFACE_PARAM"/>
+      </conditional:if>
+    </conditional:conditionalRuleSet>
+    <conditional:conditionalRuleSet>
+      <conditional:if condition="${(rest.resourcename == '_replication_sendrepblob') and (rest.operationname == 'sendrepblob') and (rest.verb == 'POST')}">
+        <mapping:rule action="None" resource="" source="${http.body}" target="${idl.param['blobContent']}" type="INTERFACE_PARAM"/>
+      </conditional:if>
+    </conditional:conditionalRuleSet>
+    <conditional:conditionalRuleSet>
+      <conditional:if condition="${(rest.resourcename == '_reservation_getavailcountdt') and (rest.operationname == 'getavailcountdt') and (rest.verb == 'POST')}">
+        <mapping:rule action="None" resource="" source="${http.body}" target="${idl.param['getavailData']}" type="INTERFACE_PARAM"/>
+      </conditional:if>
+    </conditional:conditionalRuleSet>
+    <conditional:conditionalRuleSet>
+      <conditional:if condition="${(rest.resourcename == '_rentalarticle') and (rest.operationname == 'rentalarticle') and (rest.verb == 'PUT')}">
+        <mapping:rule action="None" resource="" source="${http.body}" target="${idl.param['rentalarticle']}" type="INTERFACE_PARAM"/>
+      </conditional:if>
+    </conditional:conditionalRuleSet>
+    <conditional:conditionalRuleSet>
+      <conditional:if condition="${(rest.resourcename == '_calendar_getAvailability') and (rest.operationname == 'getavailability') and (rest.verb == 'POST')}">
+        <mapping:rule action="None" resource="" source="${http.body}" target="${idl.param['requestBody']}" type="INTERFACE_PARAM"/>
+      </conditional:if>
+    </conditional:conditionalRuleSet>
+    <conditional:conditionalRuleSet>
+      <conditional:if condition="${(rest.resourcename == '_customers') and (rest.operationname == 'customers_get') and (rest.verb == 'GET')}">
+        <mapping:rule action="None" resource="" source="${rest.queryparam['top']}" target="${idl.param['piTop']}" type="INTERFACE_PARAM"/>
+        <mapping:rule action="None" resource="" source="${rest.queryparam['skip']}" target="${idl.param['piSkip']}" type="INTERFACE_PARAM"/>
+      </conditional:if>
+    </conditional:conditionalRuleSet>
+    <conditional:conditionalRuleSet>
+      <conditional:if condition="${(rest.resourcename == '_branches') and (rest.operationname == 'branches_get') and (rest.verb == 'GET')}">
+        <mapping:rule action="None" resource="" source="${rest.queryparam['top']}" target="${idl.param['piTop']}" type="INTERFACE_PARAM"/>
+        <mapping:rule action="None" resource="" source="${rest.queryparam['skip']}" target="${idl.param['piSkip']}" type="INTERFACE_PARAM"/>
+      </conditional:if>
+    </conditional:conditionalRuleSet>
+    <conditional:conditionalRuleSet>
+      <conditional:if condition="${(rest.resourcename == '_eggetlist') and (rest.operationname == 'eggetlist') and (rest.verb == 'GET')}">
+        <mapping:rule action="None" resource="" source="${rest.queryparam['Type']}" target="${idl.param['piType']}" type="INTERFACE_PARAM"/>
+        <mapping:rule action="None" resource="" source="${rest.queryparam['FilialeID']}" target="${idl.param['piFilialeID']}" type="INTERFACE_PARAM"/>
+        <mapping:rule action="None" resource="" source="${rest.queryparam['CustCount']}" target="${idl.param['piCustCount']}" type="INTERFACE_PARAM"/>
+        <mapping:rule action="None" resource="" source="${rest.queryparam['WithTextCount']}" target="${idl.param['piWithTextCount']}" type="INTERFACE_PARAM"/>
+        <mapping:rule action="None" resource="" source="${rest.queryparam['UseAltText']}" target="${idl.param['pyUseAltText']}" type="INTERFACE_PARAM"/>
+        <mapping:rule action="None" resource="" source="${rest.queryparam['UseAltTextMix']}" target="${idl.param['pyUseAltTextMix']}" type="INTERFACE_PARAM"/>
+        <mapping:rule action="None" resource="" source="${rest.queryparam['GetVandraInfo']}" target="${idl.param['pyGetVandraInfo']}" type="INTERFACE_PARAM"/>
+        <mapping:rule action="None" resource="" source="${rest.queryparam['NotShowMembers']}" target="${idl.param['pyNotShowMembers']}" type="INTERFACE_PARAM"/>
+        <mapping:rule action="None" resource="" source="${rest.queryparam['AbbrLastname']}" target="${idl.param['pyAbbrLastname']}" type="INTERFACE_PARAM"/>
+        <mapping:rule action="None" resource="" source="${rest.queryparam['CallingBench']}" target="${idl.param['pyCallingBench']}" type="INTERFACE_PARAM"/>
+      </conditional:if>
+    </conditional:conditionalRuleSet>
+    <conditional:conditionalRuleSet>
+      <conditional:if condition="${(rest.resourcename == '_hotels') and (rest.operationname == 'hotels_get') and (rest.verb == 'GET')}">
+        <mapping:rule action="None" resource="" source="${rest.queryparam['top']}" target="${idl.param['piTop']}" type="INTERFACE_PARAM"/>
+        <mapping:rule action="None" resource="" source="${rest.queryparam['skip']}" target="${idl.param['piSkip']}" type="INTERFACE_PARAM"/>
+      </conditional:if>
+    </conditional:conditionalRuleSet>
+    <conditional:conditionalRuleSet>
+      <conditional:if condition="${(rest.resourcename == '_invoices') and (rest.operationname == 'invoices_get') and (rest.verb == 'GET')}">
+        <mapping:rule action="None" resource="" source="${rest.queryparam['top']}" target="${idl.param['piTop']}" type="INTERFACE_PARAM"/>
+        <mapping:rule action="None" resource="" source="${rest.queryparam['skip']}" target="${idl.param['piSkip']}" type="INTERFACE_PARAM"/>
+      </conditional:if>
+    </conditional:conditionalRuleSet>
+    <conditional:conditionalRuleSet>
+      <conditional:if condition="${(rest.resourcename == '_travelagencyvouchers') and (rest.operationname == 'travelagencyvoucher_get') and (rest.verb == 'GET')}">
+        <mapping:rule action="None" resource="" source="${rest.queryparam['top']}" target="${idl.param['piTop']}" type="INTERFACE_PARAM"/>
+        <mapping:rule action="None" resource="" source="${rest.queryparam['skip']}" target="${idl.param['piSkip']}" type="INTERFACE_PARAM"/>
+      </conditional:if>
+    </conditional:conditionalRuleSet>
+    <conditional:conditionalRuleSet>
+      <conditional:if condition="${(rest.resourcename == '_reservation_basket_basketid') and (rest.operationname == 'basket_put') and (rest.verb == 'PUT')}">
+        <mapping:rule action="None" resource="" source="${http.body}" target="${idl.param['basket']}" type="INTERFACE_PARAM"/>
+      </conditional:if>
+    </conditional:conditionalRuleSet>
+    <conditional:conditionalRuleSet>
+      <conditional:if condition="${(rest.resourcename == '_isatde_reservationcustomer') and (rest.operationname == 'reservationcustomer_put') and (rest.verb == 'PUT')}">
+        <mapping:rule action="None" resource="" source="${http.body}" target="${idl.param['customerObject']}" type="INTERFACE_PARAM"/>
+      </conditional:if>
+    </conditional:conditionalRuleSet>
+    <conditional:conditionalRuleSet>
+      <conditional:if condition="${(rest.resourcename == '_rentalarticles') and (rest.operationname == 'rentalarticles_get') and (rest.verb == 'GET')}">
+        <mapping:rule action="None" resource="" source="${rest.queryparam['top']}" target="${idl.param['piTop']}" type="INTERFACE_PARAM"/>
+        <mapping:rule action="None" resource="" source="${rest.queryparam['skip']}" target="${idl.param['piSkip']}" type="INTERFACE_PARAM"/>
+      </conditional:if>
+    </conditional:conditionalRuleSet>
+  
+</mapping:mapInput>
+<mapping:mapOutput>
+
+    <conditional:conditionalRuleSet>
+      <conditional:if condition="${(rest.resourcename == '_aliveserver') and (rest.operationname == 'aliveserver') and (rest.verb == 'GET')}">
+        <mapping:rule action="None" resource="" source="${idl.param['retVal']}" target="${http.statuscode}" type="INTERFACE_PARAM"/>
+        <mapping:rule action="None" resource="" source="${idl.param['returnObject']}" target="${http.body}" type="INTERFACE_PARAM"/>
+      </conditional:if>
+    </conditional:conditionalRuleSet>
+    <conditional:conditionalRuleSet>
+      <conditional:if condition="${(rest.resourcename == '_reservation_insertupdatereservation') and (rest.operationname == 'postreservation') and (rest.verb == 'POST')}">
+        <mapping:rule action="None" resource="" source="${idl.param['retVal']}" target="${http.statuscode}" type="INTERFACE_PARAM"/>
+        <mapping:rule action="None" resource="" source="${idl.param['returnObject']}" target="${http.body}" type="INTERFACE_PARAM"/>
+      </conditional:if>
+    </conditional:conditionalRuleSet>
+    <conditional:conditionalRuleSet>
+      <conditional:if condition="${(rest.resourcename == '_techarticledata') and (rest.operationname == 'techarticledata_get') and (rest.verb == 'GET')}">
+        <mapping:rule action="None" resource="" source="${idl.param['retVal']}" target="${http.statuscode}" type="INTERFACE_PARAM"/>
+        <mapping:rule action="None" resource="" source="${idl.param['returnObject']}" target="${http.body}" type="INTERFACE_PARAM"/>
+      </conditional:if>
+    </conditional:conditionalRuleSet>
+    <conditional:conditionalRuleSet>
+      <conditional:if condition="${(rest.resourcename == '_techarticledata') and (rest.operationname == 'techarticledata_post') and (rest.verb == 'POST')}">
+        <mapping:rule action="None" resource="" source="${idl.param['retVal']}" target="${http.statuscode}" type="INTERFACE_PARAM"/>
+        <mapping:rule action="None" resource="" source="${idl.param['returnObject']}" target="${http.body}" type="INTERFACE_PARAM"/>
+      </conditional:if>
+    </conditional:conditionalRuleSet>
+    <conditional:conditionalRuleSet>
+      <conditional:if condition="${(rest.resourcename == '_getarticlesrented') and (rest.operationname == 'getarticlesrented') and (rest.verb == 'GET')}">
+        <mapping:rule action="None" resource="" source="${idl.param['returnObject']}" target="${http.body}" type="INTERFACE_PARAM"/>
+        <mapping:rule action="None" resource="" source="${idl.param['retVal']}" target="${http.statuscode}" type="INTERFACE_PARAM"/>
+      </conditional:if>
+    </conditional:conditionalRuleSet>
+    <conditional:conditionalRuleSet>
+      <conditional:if condition="${(rest.resourcename == '_journals') and (rest.operationname == 'journals') and (rest.verb == 'GET')}">
+        <mapping:rule action="None" resource="" source="${idl.param['retVal']}" target="${http.statuscode}" type="INTERFACE_PARAM"/>
+        <mapping:rule action="None" resource="" source="${idl.param['returnObject']}" target="${http.body}" type="INTERFACE_PARAM"/>
+      </conditional:if>
+    </conditional:conditionalRuleSet>
+    <conditional:conditionalRuleSet>
+      <conditional:if condition="${(rest.resourcename == '_reservation_getavailcount') and (rest.operationname == 'getavailcount') and (rest.verb == 'POST')}">
+        <mapping:rule action="None" resource="" source="${idl.param['retVal']}" target="${http.statuscode}" type="INTERFACE_PARAM"/>
+        <mapping:rule action="None" resource="" source="${idl.param['returnObject']}" target="${http.body}" type="INTERFACE_PARAM"/>
+      </conditional:if>
+    </conditional:conditionalRuleSet>
+    <conditional:conditionalRuleSet>
+      <conditional:if condition="${(rest.resourcename == '_getProducts') and (rest.operationname == 'getproducts') and (rest.verb == 'GET')}">
+        <mapping:rule action="None" resource="" source="${idl.param['retVal']}" target="${http.statuscode}" type="INTERFACE_PARAM"/>
+        <mapping:rule action="None" resource="" source="${idl.param['returnObject']}" target="${http.body}" type="INTERFACE_PARAM"/>
+      </conditional:if>
+    </conditional:conditionalRuleSet>
+    <conditional:conditionalRuleSet>
+      <conditional:if condition="${(rest.resourcename == '_getProduct_productId') and (rest.operationname == 'getproduct') and (rest.verb == 'GET')}">
+        <mapping:rule action="None" resource="" source="${idl.param['retVal']}" target="${http.statuscode}" type="INTERFACE_PARAM"/>
+        <mapping:rule action="None" resource="" source="${idl.param['returnObject']}" target="${http.body}" type="INTERFACE_PARAM"/>
+      </conditional:if>
+    </conditional:conditionalRuleSet>
+    <conditional:conditionalRuleSet>
+      <conditional:if condition="${(rest.resourcename == '_cart_cartId') and (rest.operationname == 'createorupdatecart') and (rest.verb == 'PUT')}">
+        <mapping:rule action="None" resource="" source="${idl.param['retVal']}" target="${http.statuscode}" type="INTERFACE_PARAM"/>
+        <mapping:rule action="None" resource="" source="${idl.param['returnObject']}" target="${http.body}" type="INTERFACE_PARAM"/>
+      </conditional:if>
+    </conditional:conditionalRuleSet>
+    <conditional:conditionalRuleSet>
+      <conditional:if condition="${(rest.resourcename == '_replication_sendfile') and (rest.operationname == 'sendrepfile') and (rest.verb == 'POST')}">
+        <mapping:rule action="None" resource="" source="${idl.param['retVal']}" target="${http.statuscode}" type="INTERFACE_PARAM"/>
+        <mapping:rule action="None" resource="" source="${idl.param['returnObject']}" target="${http.body}" type="INTERFACE_PARAM"/>
+      </conditional:if>
+    </conditional:conditionalRuleSet>
+    <conditional:conditionalRuleSet>
+      <conditional:if condition="${(rest.resourcename == '_replication_getfile') and (rest.operationname == 'getrepfile') and (rest.verb == 'GET')}">
+        <mapping:rule action="None" resource="" source="${idl.param['retVal']}" target="${http.statuscode}" type="INTERFACE_PARAM"/>
+        <mapping:rule action="None" resource="" source="${idl.param['pcFileName']}" target="${http.header['fileName']}" type="INTERFACE_PARAM"/>
+        <mapping:rule action="None" resource="" source="${idl.param['returnObject']}" target="${http.body}" type="INTERFACE_PARAM"/>
+      </conditional:if>
+    </conditional:conditionalRuleSet>
+    <conditional:conditionalRuleSet>
+      <conditional:if condition="${(rest.resourcename == '_getProductsAvailable') and (rest.operationname == 'getproductsavailable') and (rest.verb == 'POST')}">
+        <mapping:rule action="None" resource="" source="${idl.param['retVal']}" target="${http.statuscode}" type="INTERFACE_PARAM"/>
+        <mapping:rule action="None" resource="" source="${idl.param['returnObject']}" target="${http.body}" type="INTERFACE_PARAM"/>
+      </conditional:if>
+    </conditional:conditionalRuleSet>
+    <conditional:conditionalRuleSet>
+      <conditional:if condition="${(rest.resourcename == '_isatde_serviceOrders_orderId') and (rest.operationname == 'serviceordersquery') and (rest.verb == 'GET')}">
+        <mapping:rule action="None" resource="" source="${idl.param['retVal']}" target="${http.statuscode}" type="INTERFACE_PARAM"/>
+        <mapping:rule action="None" resource="" source="${idl.param['returnObject']}" target="${http.body}" type="INTERFACE_PARAM"/>
+      </conditional:if>
+    </conditional:conditionalRuleSet>
+    <conditional:conditionalRuleSet>
+      <conditional:if condition="${(rest.resourcename == '_isatde_serviceOrders_orderId_settle') and (rest.operationname == 'serviceordersettle') and (rest.verb == 'PUT')}">
+        <mapping:rule action="None" resource="" source="${idl.param['retVal']}" target="${http.statuscode}" type="INTERFACE_PARAM"/>
+        <mapping:rule action="None" resource="" source="${idl.param['returnObject']}" target="${http.body}" type="INTERFACE_PARAM"/>
+      </conditional:if>
+    </conditional:conditionalRuleSet>
+    <conditional:conditionalRuleSet>
+      <conditional:if condition="${(rest.resourcename == '_replication_sendclstatus') and (rest.operationname == 'sendrepstatus') and (rest.verb == 'POST')}">
+        <mapping:rule action="None" resource="" source="${idl.param['retVal']}" target="${http.statuscode}" type="INTERFACE_PARAM"/>
+        <mapping:rule action="None" resource="" source="${idl.param['returnObject']}" target="${http.body}" type="INTERFACE_PARAM"/>
+      </conditional:if>
+    </conditional:conditionalRuleSet>
+    <conditional:conditionalRuleSet>
+      <conditional:if condition="${(rest.resourcename == '_replication_startclcycle') and (rest.operationname == 'startrepcycle') and (rest.verb == 'GET')}">
+        <mapping:rule action="None" resource="" source="${idl.param['retVal']}" target="${http.statuscode}" type="INTERFACE_PARAM"/>
+        <mapping:rule action="None" resource="" source="${idl.param['returnObject']}" target="${http.body}" type="INTERFACE_PARAM"/>
+      </conditional:if>
+    </conditional:conditionalRuleSet>
+    <conditional:conditionalRuleSet>
+      <conditional:if condition="${(rest.resourcename == '_replication_sendrepblob') and (rest.operationname == 'sendrepblob') and (rest.verb == 'POST')}">
+        <mapping:rule action="None" resource="" source="${idl.param['retVal']}" target="${http.statuscode}" type="INTERFACE_PARAM"/>
+        <mapping:rule action="None" resource="" source="${idl.param['returnObject']}" target="${http.body}" type="INTERFACE_PARAM"/>
+      </conditional:if>
+    </conditional:conditionalRuleSet>
+    <conditional:conditionalRuleSet>
+      <conditional:if condition="${(rest.resourcename == '_reservation_testaccess') and (rest.operationname == 'testaccess') and (rest.verb == 'GET')}">
+        <mapping:rule action="None" resource="" source="${idl.param['retVal']}" target="${http.statuscode}" type="INTERFACE_PARAM"/>
+        <mapping:rule action="None" resource="" source="${idl.param['returnObject']}" target="${http.body}" type="INTERFACE_PARAM"/>
+      </conditional:if>
+    </conditional:conditionalRuleSet>
+    <conditional:conditionalRuleSet>
+      <conditional:if condition="${(rest.resourcename == '_reservation_reservablearticles') and (rest.operationname == 'reservablearticles') and (rest.verb == 'GET')}">
+        <mapping:rule action="None" resource="" source="${idl.param['returnObject']}" target="${http.body}" type="INTERFACE_PARAM"/>
+        <mapping:rule action="None" resource="" source="${idl.param['retVal']}" target="${http.statuscode}" type="INTERFACE_PARAM"/>
+      </conditional:if>
+    </conditional:conditionalRuleSet>
+    <conditional:conditionalRuleSet>
+      <conditional:if condition="${(rest.resourcename == '_reservation_getavailcountdt') and (rest.operationname == 'getavailcountdt') and (rest.verb == 'POST')}">
+        <mapping:rule action="None" resource="" source="${idl.param['retVal']}" target="${http.statuscode}" type="INTERFACE_PARAM"/>
+        <mapping:rule action="None" resource="" source="${idl.param['returnObject']}" target="${http.body}" type="INTERFACE_PARAM"/>
+      </conditional:if>
+    </conditional:conditionalRuleSet>
+    <conditional:conditionalRuleSet>
+      <conditional:if condition="${(rest.resourcename == '_replication_getblobdata') and (rest.operationname == 'getBlobData') and (rest.verb == 'GET')}">
+        <mapping:rule action="None" resource="" source="${idl.param['retVal']}" target="${http.statuscode}" type="INTERFACE_PARAM"/>
+        <mapping:rule action="None" resource="" source="${idl.param['returnObject']}" target="${http.body}" type="INTERFACE_PARAM"/>
+      </conditional:if>
+    </conditional:conditionalRuleSet>
+    <conditional:conditionalRuleSet>
+      <conditional:if condition="${(rest.resourcename == '_rentalarticle') and (rest.operationname == 'rentalarticle') and (rest.verb == 'PUT')}">
+        <mapping:rule action="None" resource="" source="${idl.param['retVal']}" target="${http.statuscode}" type="INTERFACE_PARAM"/>
+        <mapping:rule action="None" resource="" source="${idl.param['returnObject']}" target="${http.body}" type="INTERFACE_PARAM"/>
+      </conditional:if>
+    </conditional:conditionalRuleSet>
+    <conditional:conditionalRuleSet>
+      <conditional:if condition="${(rest.resourcename == '_calendar_getAvailability') and (rest.operationname == 'getavailability') and (rest.verb == 'POST')}">
+        <mapping:rule action="None" resource="" source="${idl.param['retVal']}" target="${http.statuscode}" type="INTERFACE_PARAM"/>
+        <mapping:rule action="None" resource="" source="${idl.param['returnObject']}" target="${http.body}" type="INTERFACE_PARAM"/>
+      </conditional:if>
+    </conditional:conditionalRuleSet>
+    <conditional:conditionalRuleSet>
+      <conditional:if condition="${(rest.resourcename == '_calendar_getEquipmentTypes') and (rest.operationname == 'getequipmenttypes') and (rest.verb == 'GET')}">
+        <mapping:rule action="None" resource="" source="${idl.param['retVal']}" target="${http.statuscode}" type="INTERFACE_PARAM"/>
+        <mapping:rule action="None" resource="" source="${idl.param['returnObject']}" target="${http.body}" type="INTERFACE_PARAM"/>
+      </conditional:if>
+    </conditional:conditionalRuleSet>
+    <conditional:conditionalRuleSet>
+      <conditional:if condition="${(rest.resourcename == '_calendar_getRentalGroups') and (rest.operationname == 'getrentalgroups') and (rest.verb == 'GET')}">
+        <mapping:rule action="None" resource="" source="${idl.param['retVal']}" target="${http.statuscode}" type="INTERFACE_PARAM"/>
+        <mapping:rule action="None" resource="" source="${idl.param['returnObject']}" target="${http.body}" type="INTERFACE_PARAM"/>
+      </conditional:if>
+    </conditional:conditionalRuleSet>
+    <conditional:conditionalRuleSet>
+      <conditional:if condition="${(rest.resourcename == '_customers') and (rest.operationname == 'customers_get') and (rest.verb == 'GET')}">
+        <mapping:rule action="None" resource="" source="${idl.param['retVal']}" target="${http.statuscode}" type="INTERFACE_PARAM"/>
+        <mapping:rule action="None" resource="" source="${idl.param['returnObject']}" target="${http.body}" type="INTERFACE_PARAM"/>
+      </conditional:if>
+    </conditional:conditionalRuleSet>
+    <conditional:conditionalRuleSet>
+      <conditional:if condition="${(rest.resourcename == '_branches') and (rest.operationname == 'branches_get') and (rest.verb == 'GET')}">
+        <mapping:rule action="None" resource="" source="${idl.param['retVal']}" target="${http.statuscode}" type="INTERFACE_PARAM"/>
+        <mapping:rule action="None" resource="" source="${idl.param['returnObject']}" target="${http.body}" type="INTERFACE_PARAM"/>
+      </conditional:if>
+    </conditional:conditionalRuleSet>
+    <conditional:conditionalRuleSet>
+      <conditional:if condition="${(rest.resourcename == '_zreports') and (rest.operationname == 'zreports_get') and (rest.verb == 'GET')}">
+        <mapping:rule action="None" resource="" source="${idl.param['retVal']}" target="${http.statuscode}" type="INTERFACE_PARAM"/>
+        <mapping:rule action="None" resource="" source="${idl.param['returnObject']}" target="${http.body}" type="INTERFACE_PARAM"/>
+      </conditional:if>
+    </conditional:conditionalRuleSet>
+    <conditional:conditionalRuleSet>
+      <conditional:if condition="${(rest.resourcename == '_eggetlist') and (rest.operationname == 'eggetlist') and (rest.verb == 'GET')}">
+        <mapping:rule action="None" resource="" source="${idl.param['retVal']}" target="${http.statuscode}" type="INTERFACE_PARAM"/>
+        <mapping:rule action="None" resource="" source="${idl.param['customer']}" target="${http.body}" type="INTERFACE_PARAM"/>
+      </conditional:if>
+    </conditional:conditionalRuleSet>
+    <conditional:conditionalRuleSet>
+      <conditional:if condition="${(rest.resourcename == '_hotels') and (rest.operationname == 'hotels_get') and (rest.verb == 'GET')}">
+        <mapping:rule action="None" resource="" source="${idl.param['retVal']}" target="${http.statuscode}" type="INTERFACE_PARAM"/>
+        <mapping:rule action="None" resource="" source="${idl.param['returnObject']}" target="${http.body}" type="INTERFACE_PARAM"/>
+      </conditional:if>
+    </conditional:conditionalRuleSet>
+    <conditional:conditionalRuleSet>
+      <conditional:if condition="${(rest.resourcename == '_replication_isreadyforupdate') and (rest.operationname == 'isreadyforupdate') and (rest.verb == 'GET')}">
+        <mapping:rule action="None" resource="" source="${idl.param['retVal']}" target="${http.statuscode}" type="INTERFACE_PARAM"/>
+        <mapping:rule action="None" resource="" source="${idl.param['returnObject']}" target="${http.body}" type="INTERFACE_PARAM"/>
+      </conditional:if>
+    </conditional:conditionalRuleSet>
+    <conditional:conditionalRuleSet>
+      <conditional:if condition="${(rest.resourcename == '_replication_starttaskonclient') and (rest.operationname == 'starttaskonclient') and (rest.verb == 'GET')}">
+        <mapping:rule action="None" resource="" source="${idl.param['retVal']}" target="${http.statuscode}" type="INTERFACE_PARAM"/>
+        <mapping:rule action="None" resource="" source="${idl.param['returnObject']}" target="${http.body}" type="INTERFACE_PARAM"/>
+      </conditional:if>
+    </conditional:conditionalRuleSet>
+    <conditional:conditionalRuleSet>
+      <conditional:if condition="${(rest.resourcename == '_invoices') and (rest.operationname == 'invoices_get') and (rest.verb == 'GET')}">
+        <mapping:rule action="None" resource="" source="${idl.param['retVal']}" target="${http.statuscode}" type="INTERFACE_PARAM"/>
+        <mapping:rule action="None" resource="" source="${idl.param['returnObject']}" target="${http.body}" type="INTERFACE_PARAM"/>
+      </conditional:if>
+    </conditional:conditionalRuleSet>
+    <conditional:conditionalRuleSet>
+      <conditional:if condition="${(rest.resourcename == '_reservation_pushtoeasygate') and (rest.operationname == 'pushtoeasygate_put') and (rest.verb == 'PUT')}">
+        <mapping:rule action="None" resource="" source="${idl.param['retVal']}" target="${http.statuscode}" type="INTERFACE_PARAM"/>
+        <mapping:rule action="None" resource="" source="${idl.param['returnObject']}" target="${http.body}" type="INTERFACE_PARAM"/>
+      </conditional:if>
+    </conditional:conditionalRuleSet>
+    <conditional:conditionalRuleSet>
+      <conditional:if condition="${(rest.resourcename == '_travelagencyvouchers') and (rest.operationname == 'travelagencyvoucher_get') and (rest.verb == 'GET')}">
+        <mapping:rule action="None" resource="" source="${idl.param['retVal']}" target="${http.statuscode}" type="INTERFACE_PARAM"/>
+        <mapping:rule action="None" resource="" source="${idl.param['returnObject']}" target="${http.body}" type="INTERFACE_PARAM"/>
+      </conditional:if>
+    </conditional:conditionalRuleSet>
+    <conditional:conditionalRuleSet>
+      <conditional:if condition="${(rest.resourcename == '_reservation_basket_basketid') and (rest.operationname == 'basket_put') and (rest.verb == 'PUT')}">
+        <mapping:rule action="None" resource="" source="${idl.param['retVal']}" target="${http.statuscode}" type="INTERFACE_PARAM"/>
+        <mapping:rule action="None" resource="" source="${idl.param['returnObject']}" target="${http.body}" type="INTERFACE_PARAM"/>
+      </conditional:if>
+    </conditional:conditionalRuleSet>
+    <conditional:conditionalRuleSet>
+      <conditional:if condition="${(rest.resourcename == '_reservation_basket_basketid') and (rest.operationname == 'basket_delete') and (rest.verb == 'DELETE')}">
+        <mapping:rule action="None" resource="" source="${idl.param['retVal']}" target="${http.statuscode}" type="INTERFACE_PARAM"/>
+        <mapping:rule action="None" resource="" source="${idl.param['returnObject']}" target="${http.body}" type="INTERFACE_PARAM"/>
+      </conditional:if>
+    </conditional:conditionalRuleSet>
+    <conditional:conditionalRuleSet>
+      <conditional:if condition="${(rest.resourcename == '_isatde_reservation') and (rest.operationname == 'reservation_get') and (rest.verb == 'GET')}">
+        <mapping:rule action="None" resource="" source="${idl.param['retVal']}" target="${http.statuscode}" type="INTERFACE_PARAM"/>
+        <mapping:rule action="None" resource="" source="${idl.param['returnObject']}" target="${http.body}" type="INTERFACE_PARAM"/>
+      </conditional:if>
+    </conditional:conditionalRuleSet>
+    <conditional:conditionalRuleSet>
+      <conditional:if condition="${(rest.resourcename == '_isatde_reservationcustomer') and (rest.operationname == 'reservationcustomer_put') and (rest.verb == 'PUT')}">
+        <mapping:rule action="None" resource="" source="${idl.param['retVal']}" target="${http.statuscode}" type="INTERFACE_PARAM"/>
+        <mapping:rule action="None" resource="" source="${idl.param['returnObject']}" target="${http.body}" type="INTERFACE_PARAM"/>
+      </conditional:if>
+    </conditional:conditionalRuleSet>
+    <conditional:conditionalRuleSet>
+      <conditional:if condition="${(rest.resourcename == '_rentalarticles') and (rest.operationname == 'rentalarticles_get') and (rest.verb == 'GET')}">
+        <mapping:rule action="None" resource="" source="${idl.param['retVal']}" target="${http.statuscode}" type="INTERFACE_PARAM"/>
+        <mapping:rule action="None" resource="" source="${idl.param['returnObject']}" target="${http.body}" type="INTERFACE_PARAM"/>
+      </conditional:if>
+    </conditional:conditionalRuleSet>
+  
+</mapping:mapOutput>
+</mapping:messageMapping>]]>
+        </mapping:MappingBean>
+</beans>

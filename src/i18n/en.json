@@ -1,0 +1,70 @@
+{
+  "welcome": "Welcome to {{shopName}}!\n\nPlease choose your language:\n1 - Deutsch\n2 - English\n3 - Italiano (coming soon)",
+  "language_invalid": "Please reply with 1 for Deutsch, 2 for English, or 3 for Italiano.",
+  "language_it_unavailable": "Italian is not available yet. Please choose 1 for Deutsch or 2 for English.",
+
+  "name_first_prompt": "What is your first name?",
+  "name_last_prompt": "And your last name?",
+  "name_invalid": "Please enter a valid name (at least 1 character).",
+
+  "date_from_prompt": "From which date would you like to rent?\nFormat: DD.MM.YYYY (e.g. 15.02.2026)",
+  "date_to_prompt": "Until which date?\nFormat: DD.MM.YYYY (e.g. 22.02.2026)",
+  "date_invalid": "Invalid date. Please use the format DD.MM.YYYY (e.g. 15.02.2026).",
+  "date_past": "That date is in the past. Please choose a future date.",
+  "date_order": "The return date must be after the pick-up date. Please enter the return date again.",
+
+  "equipment_prompt": "What would you like to rent?\n1 - Ski\n2 - Snowboard\n3 - Ski + Snowboard",
+  "equipment_invalid": "Please choose 1 (Ski), 2 (Snowboard), or 3 (Ski + Snowboard).",
+
+  "skill_prompt": "How would you describe your ability level?\n1 - Beginner\n2 - Intermediate\n3 - Advanced",
+  "skill_invalid": "Please choose 1 (Beginner), 2 (Intermediate), or 3 (Advanced).",
+
+  "physical_height_prompt": "Your height in cm (e.g. 175):",
+  "physical_weight_prompt": "Your weight in kg (e.g. 75):",
+  "physical_boot_prompt": "Your shoe size (e.g. 42 or 42.5):",
+  "physical_sole_prompt": "The length of your boot sole in mm (e.g. 285):\n(You'll find the sole length printed on the insole.)",
+  "physical_number_invalid": "Please enter a valid number.",
+  "physical_height_invalid": "Please enter a height between 100 and 230 cm.",
+  "physical_weight_invalid": "Please enter a weight between 20 and 200 kg.",
+  "physical_sole_invalid": "Please enter a sole length between 180 and 380 mm.",
+
+  "group_size_prompt": "How many people are renting in total? (including yourself, max. 20)",
+  "group_size_invalid": "Please enter a number between 1 and 20.",
+
+  "group_member_intro": "Details for person {{index}} of {{total}}:",
+  "group_member_first_name_prompt": "First name:",
+  "group_member_last_name_prompt": "Last name:",
+  "group_member_height_prompt": "Height in cm:",
+  "group_member_weight_prompt": "Weight in kg:",
+  "group_member_boot_prompt": "Shoe size:",
+  "group_member_sole_prompt": "Boot sole length in mm:",
+  "group_member_skill_prompt": "Ability level:\n1 - Beginner\n2 - Intermediate\n3 - Advanced",
+
+  "summary_header": "Summary of your booking request:",
+  "summary_main_person": "Person 1: {{firstname}} {{lastname}}",
+  "summary_dates": "Period: {{datefrom}} to {{dateto}}",
+  "summary_equipment": "Equipment: {{equipment}}",
+  "summary_skill": "Ability: {{skill}}",
+  "summary_physical": "Height: {{height}} cm | Weight: {{weight}} kg | Shoe size: {{boot}} | Sole: {{sole}} mm",
+  "summary_group_header": "Additional people ({{count}}):",
+  "summary_group_member": "Person {{index}}: {{firstname}} {{lastname}} | {{height}} cm | {{weight}} kg | Size {{boot}} | {{sole}} mm | {{skill}}",
+
+  "confirm_prompt": "Please confirm your booking by replying YES or cancel with NO.",
+  "confirm_invalid": "Please reply with YES or NO.",
+  "confirm_cancelled": "Your booking request has been cancelled. Feel free to message us any time to start a new booking.",
+
+  "reservation_success": "Your booking is confirmed!\n\nBooking number: {{code}}\n\nWe look forward to seeing you!",
+  "reservation_error": "An error occurred while creating your booking. Please try again or contact us directly.",
+  "availability_none": "Unfortunately no equipment is available for the selected period. Please choose different dates.",
+  "availability_check_error": "We could not check availability right now. We will proceed anyway — our team will confirm the final details.",
+
+  "session_expired": "Your session has expired. Let's start fresh!\n\nWelcome to {{shopName}}!\n\nPlease choose your language:\n1 - Deutsch\n2 - English\n3 - Italiano (coming soon)",
+  "error_generic": "An unexpected error occurred. Please try again in a moment.",
+
+  "equipment_ski": "Ski",
+  "equipment_snowboard": "Snowboard",
+  "equipment_both": "Ski + Snowboard",
+  "skill_beginner": "Beginner",
+  "skill_intermediate": "Intermediate",
+  "skill_advanced": "Advanced"
+}

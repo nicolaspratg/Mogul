@@ -1,0 +1,70 @@
+{
+  "welcome": "Willkommen bei {{shopName}}!\n\nBitte wählen Sie Ihre Sprache:\n1 - Deutsch\n2 - English\n3 - Italiano (prossimamente)",
+  "language_invalid": "Bitte geben Sie 1 für Deutsch, 2 für English oder 3 für Italiano ein.",
+  "language_it_unavailable": "Italienisch ist noch nicht verfügbar. Bitte wählen Sie 1 für Deutsch oder 2 für English.",
+
+  "name_first_prompt": "Wie lautet Ihr Vorname?",
+  "name_last_prompt": "Und Ihr Nachname?",
+  "name_invalid": "Bitte geben Sie einen gültigen Namen ein (mindestens 1 Zeichen).",
+
+  "date_from_prompt": "Ab welchem Datum möchten Sie mieten?\nFormat: TT.MM.JJJJ (z. B. 15.02.2026)",
+  "date_to_prompt": "Bis wann möchten Sie mieten?\nFormat: TT.MM.JJJJ (z. B. 22.02.2026)",
+  "date_invalid": "Ungültiges Datum. Bitte verwenden Sie das Format TT.MM.JJJJ (z. B. 15.02.2026).",
+  "date_past": "Das Datum liegt in der Vergangenheit. Bitte wählen Sie ein zukünftiges Datum.",
+  "date_order": "Das Rückgabedatum muss nach dem Abholdatum liegen. Bitte geben Sie das Rückgabedatum erneut ein.",
+
+  "equipment_prompt": "Was möchten Sie ausleihen?\n1 - Ski\n2 - Snowboard\n3 - Ski + Snowboard",
+  "equipment_invalid": "Bitte wählen Sie 1 (Ski), 2 (Snowboard) oder 3 (Ski + Snowboard).",
+
+  "skill_prompt": "Wie würden Sie Ihr Fahrkönnen einschätzen?\n1 - Anfänger\n2 - Fortgeschritten\n3 - Experte",
+  "skill_invalid": "Bitte wählen Sie 1 (Anfänger), 2 (Fortgeschritten) oder 3 (Experte).",
+
+  "physical_height_prompt": "Ihre Körpergröße in cm (z. B. 175):",
+  "physical_weight_prompt": "Ihr Gewicht in kg (z. B. 75):",
+  "physical_boot_prompt": "Ihre Schuhgröße (z. B. 42 oder 42.5):",
+  "physical_sole_prompt": "Die Länge Ihrer Schuhsohle in mm (z. B. 285):\n(Die Sohlenlänge steht auf der Innensohle des Schuhs.)",
+  "physical_number_invalid": "Bitte geben Sie eine gültige Zahl ein.",
+  "physical_height_invalid": "Bitte geben Sie eine Körpergröße zwischen 100 und 230 cm ein.",
+  "physical_weight_invalid": "Bitte geben Sie ein Gewicht zwischen 20 und 200 kg ein.",
+  "physical_sole_invalid": "Bitte geben Sie eine Sohlenlänge zwischen 180 und 380 mm ein.",
+
+  "group_size_prompt": "Wie viele Personen mieten insgesamt? (inkl. Ihrer Person, max. 20)",
+  "group_size_invalid": "Bitte geben Sie eine Zahl zwischen 1 und 20 ein.",
+
+  "group_member_intro": "Angaben für Person {{index}} von {{total}}:",
+  "group_member_first_name_prompt": "Vorname:",
+  "group_member_last_name_prompt": "Nachname:",
+  "group_member_height_prompt": "Körpergröße in cm:",
+  "group_member_weight_prompt": "Gewicht in kg:",
+  "group_member_boot_prompt": "Schuhgröße:",
+  "group_member_sole_prompt": "Sohlenlänge in mm:",
+  "group_member_skill_prompt": "Fahrkönnen:\n1 - Anfänger\n2 - Fortgeschritten\n3 - Experte",
+
+  "summary_header": "Zusammenfassung Ihrer Buchungsanfrage:",
+  "summary_main_person": "Person 1: {{firstname}} {{lastname}}",
+  "summary_dates": "Zeitraum: {{datefrom}} bis {{dateto}}",
+  "summary_equipment": "Ausrüstung: {{equipment}}",
+  "summary_skill": "Fahrkönnen: {{skill}}",
+  "summary_physical": "Körpergröße: {{height}} cm | Gewicht: {{weight}} kg | Schuhgröße: {{boot}} | Sohle: {{sole}} mm",
+  "summary_group_header": "Weitere Personen ({{count}}):",
+  "summary_group_member": "Person {{index}}: {{firstname}} {{lastname}} | {{height}} cm | {{weight}} kg | Gr. {{boot}} | {{sole}} mm | {{skill}}",
+
+  "confirm_prompt": "Bitte bestätigen Sie Ihre Buchung mit JA oder lehnen Sie sie mit NEIN ab.",
+  "confirm_invalid": "Bitte antworten Sie mit JA oder NEIN.",
+  "confirm_cancelled": "Ihre Buchungsanfrage wurde abgebrochen. Schreiben Sie uns jederzeit, um eine neue Buchung zu starten.",
+
+  "reservation_success": "Ihre Buchung ist bestätigt!\n\nBuchungsnummer: {{code}}\n\nWir freuen uns auf Ihren Besuch!",
+  "reservation_error": "Beim Erstellen der Buchung ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut oder kontaktieren Sie uns direkt.",
+  "availability_none": "Für den gewählten Zeitraum ist leider keine passende Ausrüstung verfügbar. Bitte wählen Sie andere Daten.",
+  "availability_check_error": "Die Verfügbarkeit konnte momentan nicht geprüft werden. Wir fahren trotzdem fort – unser Team wird Ihnen die finale Bestätigung mitteilen.",
+
+  "session_expired": "Ihre Sitzung ist abgelaufen. Starten wir neu!\n\nWillkommen bei {{shopName}}!\n\nBitte wählen Sie Ihre Sprache:\n1 - Deutsch\n2 - English\n3 - Italiano (prossimamente)",
+  "error_generic": "Ein unerwarteter Fehler ist aufgetreten. Bitte versuchen Sie es in einigen Augenblicken erneut.",
+
+  "equipment_ski": "Ski",
+  "equipment_snowboard": "Snowboard",
+  "equipment_both": "Ski + Snowboard",
+  "skill_beginner": "Anfänger",
+  "skill_intermediate": "Fortgeschritten",
+  "skill_advanced": "Experte"
+}
