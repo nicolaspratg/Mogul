@@ -3,6 +3,17 @@
   "language_invalid": "Please reply with 1 for Deutsch, 2 for English, or 3 for Italiano.",
   "language_it_unavailable": "Italian is not available yet. Please choose 1 for Deutsch or 2 for English.",
 
+  "branch_prompt": "Please select the branch where you will pick up your equipment:\n1 - Obergurgl Zentrum (Piccardweg 5)\n2 - Hochgurgl (Hochgurglerstraße 16)\n3 - Kressbrunnen (Kressbrunnenweg 6a)\n4 - Pirchhütt (Gurglerstraße 121)\n5 - Längenfeld (Oberlängenfeld 47)",
+  "branch_invalid": "Please choose a number from 1 to 5.",
+
+  "email_prompt": "Please enter your email address:",
+  "email_invalid": "Please enter a valid email address (e.g. name@example.com).",
+
+  "special_requests_prompt": "Any special requests? (Type your request, or \"-\" if none.)",
+
+  "insurance_prompt": "Would you like to add the Carefree Protection Package?\nCovers lost or damaged equipment (3.50 €/day adults · 1.50 €/day kids).\nTotal for your group: {{price}} € ({{days}} days).\n1 - Yes\n2 - No",
+  "insurance_invalid": "Please reply with 1 (Yes) or 2 (No).",
+
   "date_from_prompt": "From which date would you like to rent?\nFormat: DD.MM.YYYY (e.g. 15.02.2026)",
   "date_to_prompt": "Until which date?\nFormat: DD.MM.YYYY (e.g. 22.02.2026)",
   "date_invalid": "Invalid date. Please use the format DD.MM.YYYY (e.g. 15.02.2026).",
@@ -79,13 +90,21 @@
   "add_person_invalid": "Please reply with 1 (Yes) or 2 (No).",
 
   "summary_header": "Summary of your booking request:",
+  "summary_branch": "Pick-up branch: {{branch}}",
   "summary_dates": "Period: {{datefrom}} to {{dateto}}",
+  "summary_email": "Email: {{email}}",
   "summary_person_header": "Person {{index}}: {{firstname}} {{lastname}} ({{dob}})",
   "summary_person_equipment": "Equipment: {{equipment}}",
   "summary_person_measurements": "Height: {{height}} cm | Weight: {{weight}} kg",
   "summary_person_skill": "Ability: {{skill}}",
   "summary_person_sole": "Boot sole: {{sole}} mm",
   "summary_person_hotel": "Hotel: {{hotel}}",
+  "summary_person_price": "Subtotal: {{price}} €",
+  "summary_insurance_header": "Carefree Protection Package:",
+  "summary_insurance_person": "  {{firstname}} {{lastname}}: {{days}} days × {{rate}} €/day = {{price}} €",
+  "summary_insurance_total": "  Insurance total: {{price}} €",
+  "summary_special_requests": "Special requests: {{requests}}",
+  "summary_total": "TOTAL: {{total}} €",
 
   "confirm_prompt": "Please confirm your booking by replying YES or cancel with NO.",
   "confirm_invalid": "Please reply with YES or NO.",

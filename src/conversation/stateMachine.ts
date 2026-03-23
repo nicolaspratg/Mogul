@@ -5,7 +5,7 @@
  *
  * Flow:
  *  1. WELCOME           → language selection
- *  2. DATE_FROM         → DATE_TO
+ *  2. DATE_FROM         → DATE_TO → BRANCH
  *  3. Per-person loop:
  *     PERSON_NAME       → PERSON_DOB → EQUIPMENT_CATEGORY
  *     ┌─ Ski:        SKI_SKILL (adults) → SKI_BOOTS → [SKI_BOOTS_TYPE | SKI_SOLE]
@@ -17,7 +17,7 @@
  *        ├─ Touring: TOURING_ITEMS → HELMET → [HELMET_TYPE] → [MEASUREMENTS] → HOTEL
  *        ├─ XC:      XC_TYPE → XC_BOOTS → MEASUREMENTS → HOTEL
  *        └─ Misc:    MISC_ITEM → HOTEL
- *     ADD_PERSON (yes → loop back | no → CONFIRM)
+ *     ADD_PERSON (yes → loop back | no → EMAIL → SPECIAL_REQUESTS → INSURANCE → CONFIRM)
  *  4. CONFIRM → DONE
  *
  * Measurement rule: height + weight required when equipment includes any of
@@ -103,6 +103,66 @@ function needsMeasurements(items: EquipmentItem[]): boolean {
 }
 
 // ---------------------------------------------------------------------------
+// Branches (example — replace with live Easyrent data when available)
+// ---------------------------------------------------------------------------
+
+const EXAMPLE_BRANCHES = [
+  { id: 1, name: 'Obergurgl Zentrum', address: 'Piccardweg 5, 6456 Obergurgl' },
+  { id: 2, name: 'Hochgurgl',         address: 'Hochgurglerstraße 16, 6456 Hochgurgl' },
+  { id: 3, name: 'Kressbrunnen',      address: 'Kressbrunnenweg 6a, 6456 Obergurgl' },
+  { id: 4, name: 'Pirchhütt',         address: 'Gurglerstraße 121, 6456 Obergurgl' },
+  { id: 5, name: 'Längenfeld',        address: 'Oberlängenfeld 47, 6444 Längenfeld' },
+];
+
+// ---------------------------------------------------------------------------
+// Mock prices (EUR per rental period — replace with live catalog prices)
+// ---------------------------------------------------------------------------
+
+const MOCK_PRICES: Record<EquipmentItem, number> = {
+  ski_factory_test:      306,
+  ski_diamond:           376,
+  ski_premium:           250,
+  ski_economy:           180,
+  ski_basic:             120,
+  ski_boots_premium:      80,
+  ski_boots_economy:      50,
+  snowboard_premium:     280,
+  snowboard_economy:     190,
+  snowboard_boots:        60,
+  xc_classic:            120,
+  xc_classic_boots:       40,
+  xc_skating:            140,
+  xc_skating_boots:       45,
+  touring_ski:           200,
+  touring_boots:          90,
+  touring_backpack:       30,
+  touring_radar:          25,
+  touring_shovel:         15,
+  touring_avalanche_bag:  40,
+  touring_probe:          10,
+  helmet_visor:           30,
+  helmet_no_visor:        20,
+  snowshoes:              30,
+  sleigh:                 15,
+  kids_ski:               60,
+  kids_boots:             30,
+};
+
+const INSURANCE_RATE_ADULT = 3.50; // € per day per adult
+const INSURANCE_RATE_KID   = 1.50; // € per day per child (≤ 14)
+
+function calcRentalDays(datefrom?: string, dateto?: string): number {
+  if (!datefrom || !dateto) return 1;
+  const ms = new Date(dateto).getTime() - new Date(datefrom).getTime();
+  return Math.max(1, Math.round(ms / (1000 * 60 * 60 * 24)));
+}
+
+function calcInsurancePrice(members: GroupMember[], datefrom?: string, dateto?: string): number {
+  const days = calcRentalDays(datefrom, dateto);
+  return members.reduce((sum, m) => sum + days * (isKid(m.dob) ? INSURANCE_RATE_KID : INSURANCE_RATE_ADULT), 0);
+}
+
+// ---------------------------------------------------------------------------
 // ConversationStep enum
 // ---------------------------------------------------------------------------
 
@@ -110,6 +170,7 @@ export enum ConversationStep {
   WELCOME            = 'welcome',
   DATE_FROM          = 'date_from',
   DATE_TO            = 'date_to',
+  BRANCH             = 'branch',
   // Per-person
   PERSON_NAME        = 'person_name',
   PERSON_DOB         = 'person_dob',
@@ -137,6 +198,9 @@ export enum ConversationStep {
   HOTEL              = 'hotel',
   // Group + completion
   ADD_PERSON         = 'add_person',
+  EMAIL              = 'email',
+  SPECIAL_REQUESTS   = 'special_requests',
+  INSURANCE          = 'insurance',
   CONFIRM            = 'confirm',
   DONE               = 'done',
 }
@@ -330,11 +394,21 @@ function afterHelmet(data: InternalData, member: Partial<GroupMember>, language:
 function buildSummary(data: InternalData, language: Language): string {
   const lines: string[] = [t(language, 'summary_header'), ''];
 
+  if (data.branchId) {
+    const branch = EXAMPLE_BRANCHES.find(b => b.id === data.branchId);
+    if (branch) lines.push(t(language, 'summary_branch', { branch: branch.name }));
+  }
+
   lines.push(t(language, 'summary_dates', {
     datefrom: data.datefrom ? isoToDisplay(data.datefrom) : '',
     dateto:   data.dateto   ? isoToDisplay(data.dateto)   : '',
   }));
 
+  if (data.email) {
+    lines.push(t(language, 'summary_email', { email: data.email }));
+  }
+
+  let grandTotal = 0;
   const members = data.members ?? [];
   members.forEach((m, i) => {
     lines.push('');
@@ -362,7 +436,35 @@ function buildSummary(data: InternalData, language: Language): string {
     if (m.hotel) {
       lines.push(t(language, 'summary_person_hotel', { hotel: m.hotel }));
     }
+    const personTotal = m.equipment.reduce((sum, item) => sum + (MOCK_PRICES[item] ?? 0), 0);
+    grandTotal += personTotal;
+    lines.push(t(language, 'summary_person_price', { price: personTotal.toFixed(2) }));
   });
+
+  lines.push('');
+  if (data.insurance) {
+    const days = calcRentalDays(data.datefrom, data.dateto);
+    let insuranceTotal = 0;
+    lines.push(t(language, 'summary_insurance_header'));
+    members.forEach(m => {
+      const rate = isKid(m.dob) ? INSURANCE_RATE_KID : INSURANCE_RATE_ADULT;
+      const personInsurance = days * rate;
+      insuranceTotal += personInsurance;
+      lines.push(t(language, 'summary_insurance_person', {
+        firstname: m.firstname,
+        lastname:  m.lastname,
+        days:      String(days),
+        rate:      rate.toFixed(2),
+        price:     personInsurance.toFixed(2),
+      }));
+    });
+    lines.push(t(language, 'summary_insurance_total', { price: insuranceTotal.toFixed(2) }));
+    grandTotal += insuranceTotal;
+  }
+  if (data.specialRequests) {
+    lines.push(t(language, 'summary_special_requests', { requests: data.specialRequests }));
+  }
+  lines.push(t(language, 'summary_total', { total: grandTotal.toFixed(2) }));
 
   return lines.join('\n');
 }
@@ -417,9 +519,64 @@ function handleDateTo(data: InternalData, input: string): StepResult | 'invalid'
   if (new Date(iso) < today) return 'past';
   if (data.datefrom && new Date(iso) <= new Date(data.datefrom)) return 'order';
   return {
-    nextStep: ConversationStep.PERSON_NAME,
+    nextStep: ConversationStep.BRANCH,
     updatedData: { ...data, dateto: iso, members: [] },
+    reply: t(data.language, 'branch_prompt'),
+  };
+}
+
+function handleBranch(data: InternalData, input: string): StepResult | null {
+  const choice = parseInt(input.trim(), 10);
+  const branch = EXAMPLE_BRANCHES[choice - 1];
+  if (!branch) return null;
+  return {
+    nextStep: ConversationStep.PERSON_NAME,
+    updatedData: { ...data, branchId: branch.id },
     reply: t(data.language, 'person_first_intro') + '\n' + t(data.language, 'person_name_prompt'),
+  };
+}
+
+function parseEmail(input: string): string | null {
+  const email = input.trim();
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ? email : null;
+}
+
+function handleEmail(data: InternalData, input: string): StepResult | null {
+  const email = parseEmail(input);
+  if (!email) return null;
+  return {
+    nextStep: ConversationStep.SPECIAL_REQUESTS,
+    updatedData: { ...data, email },
+    reply: t(data.language, 'special_requests_prompt'),
+  };
+}
+
+function handleSpecialRequests(data: InternalData, input: string): StepResult {
+  const text = input.trim();
+  const skip = text === '-' || text.toLowerCase() === 'none' || text.toLowerCase() === 'keine';
+  const specialRequests = skip ? undefined : text;
+  const days = calcRentalDays(data.datefrom, data.dateto);
+  const totalInsurance = calcInsurancePrice(data.members ?? [], data.datefrom, data.dateto);
+  return {
+    nextStep: ConversationStep.INSURANCE,
+    updatedData: { ...data, specialRequests },
+    reply: t(data.language, 'insurance_prompt', {
+      days: String(days),
+      price: totalInsurance.toFixed(2),
+    }),
+  };
+}
+
+function handleInsurance(data: InternalData, input: string): StepResult | null {
+  const answer = normalizeYesNo(input, data.language);
+  if (!answer) return null;
+  const insurance = answer === 'yes';
+  const finalData = { ...data, insurance };
+  const summary = buildSummary(finalData, data.language);
+  return {
+    nextStep: ConversationStep.CONFIRM,
+    updatedData: finalData,
+    reply: `${summary}\n\n${t(data.language, 'confirm_prompt')}`,
   };
 }
 
@@ -853,11 +1010,10 @@ function handleAddPerson(data: InternalData, input: string): StepResult | null {
   }
 
   const finalData = { ...data, members, currentMember: undefined, currentBranch: undefined };
-  const summary = buildSummary(finalData, data.language);
   return {
-    nextStep: ConversationStep.CONFIRM,
+    nextStep: ConversationStep.EMAIL,
     updatedData: finalData,
-    reply: `${summary}\n\n${t(data.language, 'confirm_prompt')}`,
+    reply: t(data.language, 'email_prompt'),
   };
 }
 
@@ -1145,6 +1301,12 @@ async function routeStep(
       break;
     }
 
+    case ConversationStep.BRANCH: {
+      result = handleBranch(data, input);
+      if (!result) return t(language, 'branch_invalid');
+      break;
+    }
+
     case ConversationStep.PERSON_NAME: {
       result = handlePersonName(data, input);
       if (!result) return t(language, 'person_name_invalid');
@@ -1274,6 +1436,23 @@ async function routeStep(
     case ConversationStep.ADD_PERSON: {
       result = handleAddPerson(data, input);
       if (!result) return t(language, 'add_person_invalid');
+      break;
+    }
+
+    case ConversationStep.EMAIL: {
+      result = handleEmail(data, input);
+      if (!result) return t(language, 'email_invalid');
+      break;
+    }
+
+    case ConversationStep.SPECIAL_REQUESTS: {
+      result = handleSpecialRequests(data, input);
+      break;
+    }
+
+    case ConversationStep.INSURANCE: {
+      result = handleInsurance(data, input);
+      if (!result) return t(language, 'insurance_invalid');
       break;
     }
 

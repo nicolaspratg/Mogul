@@ -3,6 +3,17 @@
   "language_invalid": "Bitte geben Sie 1 für Deutsch, 2 für English oder 3 für Italiano ein.",
   "language_it_unavailable": "Italienisch ist noch nicht verfügbar. Bitte wählen Sie 1 für Deutsch oder 2 für English.",
 
+  "branch_prompt": "Bitte wählen Sie die Filiale, in der Sie die Ausrüstung abholen:\n1 - Obergurgl Zentrum (Piccardweg 5)\n2 - Hochgurgl (Hochgurglerstraße 16)\n3 - Kressbrunnen (Kressbrunnenweg 6a)\n4 - Pirchhütt (Gurglerstraße 121)\n5 - Längenfeld (Oberlängenfeld 47)",
+  "branch_invalid": "Bitte wählen Sie eine Nummer von 1 bis 5.",
+
+  "email_prompt": "Bitte geben Sie Ihre E-Mail-Adresse ein:",
+  "email_invalid": "Bitte geben Sie eine gültige E-Mail-Adresse ein (z. B. name@beispiel.com).",
+
+  "special_requests_prompt": "Haben Sie besondere Wünsche? (Bitte eingeben, oder \"-\" falls keine.)",
+
+  "insurance_prompt": "Möchten Sie das Sorglos-Schutzpaket hinzufügen?\nDeckt verlorene oder beschädigte Ausrüstung ab (3,50 €/Tag Erwachsene · 1,50 €/Tag Kinder).\nGesamtpreis für Ihre Gruppe: {{price}} € ({{days}} Tage).\n1 - Ja\n2 - Nein",
+  "insurance_invalid": "Bitte antworten Sie mit 1 (Ja) oder 2 (Nein).",
+
   "date_from_prompt": "Ab welchem Datum möchten Sie mieten?\nFormat: TT.MM.JJJJ (z. B. 15.02.2026)",
   "date_to_prompt": "Bis wann möchten Sie mieten?\nFormat: TT.MM.JJJJ (z. B. 22.02.2026)",
   "date_invalid": "Ungültiges Datum. Bitte verwenden Sie das Format TT.MM.JJJJ (z. B. 15.02.2026).",
@@ -79,13 +90,21 @@
   "add_person_invalid": "Bitte antworten Sie mit 1 (Ja) oder 2 (Nein).",
 
   "summary_header": "Zusammenfassung Ihrer Buchungsanfrage:",
+  "summary_branch": "Abholfiliale: {{branch}}",
   "summary_dates": "Zeitraum: {{datefrom}} bis {{dateto}}",
+  "summary_email": "E-Mail: {{email}}",
   "summary_person_header": "Person {{index}}: {{firstname}} {{lastname}} ({{dob}})",
   "summary_person_equipment": "Ausrüstung: {{equipment}}",
   "summary_person_measurements": "Größe: {{height}} cm | Gewicht: {{weight}} kg",
   "summary_person_skill": "Fahrkönnen: {{skill}}",
   "summary_person_sole": "Sohlenlänge: {{sole}} mm",
   "summary_person_hotel": "Hotel: {{hotel}}",
+  "summary_person_price": "Zwischensumme: {{price}} €",
+  "summary_insurance_header": "Sorglos-Schutzpaket:",
+  "summary_insurance_person": "  {{firstname}} {{lastname}}: {{days}} Tage × {{rate}} €/Tag = {{price}} €",
+  "summary_insurance_total": "  Versicherung gesamt: {{price}} €",
+  "summary_special_requests": "Besondere Wünsche: {{requests}}",
+  "summary_total": "GESAMTBETRAG: {{total}} €",
 
   "confirm_prompt": "Bitte bestätigen Sie Ihre Buchung mit JA oder lehnen Sie sie mit NEIN ab.",
   "confirm_invalid": "Bitte antworten Sie mit JA oder NEIN.",

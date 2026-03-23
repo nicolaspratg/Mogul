@@ -614,7 +614,11 @@ export interface ConversationData {
   language: Language;
   datefrom?: string; // ISO date, e.g. "2025-02-10"
   dateto?: string;
+  branchId?: number;     // selected pick-up branch ID
   members?: GroupMember[];
+  email?: string;        // primary booker's email
+  specialRequests?: string;
+  insurance?: boolean;   // Carefree Protection Package
   easyrentCustomerCode?: string;
   easyrentGroupCode?: string;
 }
