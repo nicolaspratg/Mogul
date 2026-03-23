@@ -57,7 +57,7 @@ type Branch = 'ski' | 'snowboard' | 'touring' | 'xc' | 'misc';
 
 const EQUIPMENT_LABEL_KEYS: Record<EquipmentItem, string> = {
   ski_factory_test:      'equipment_item_ski_factory_test',
-  ski_diamond:           'equipment_item_ski_diamond',
+  ski_diamant:           'equipment_item_ski_diamant',
   ski_premium:           'equipment_item_ski_premium',
   ski_economy:           'equipment_item_ski_economy',
   ski_basic:             'equipment_item_ski_basic',
@@ -94,7 +94,7 @@ function equipmentLabels(items: EquipmentItem[], language: Language): string {
 // ---------------------------------------------------------------------------
 
 const MEASUREMENT_ITEMS: EquipmentItem[] = [
-  'ski_factory_test', 'ski_diamond', 'ski_premium', 'ski_economy', 'ski_basic',
+  'ski_factory_test', 'ski_diamant', 'ski_premium', 'ski_economy', 'ski_basic',
   'kids_ski', 'touring_ski', 'xc_classic', 'xc_skating',
 ];
 
@@ -120,7 +120,7 @@ const EXAMPLE_BRANCHES = [
 
 const MOCK_PRICES: Record<EquipmentItem, number> = {
   ski_factory_test:      306,
-  ski_diamond:           376,
+  ski_diamant:           376,
   ski_premium:           250,
   ski_economy:           180,
   ski_basic:             120,
@@ -764,7 +764,7 @@ function handleSkiNeed(data: InternalData, input: string): StepResult | null {
 function handleSkiModel(data: InternalData, input: string): StepResult | null {
   const itemMap: Record<string, EquipmentItem> = {
     '1': 'ski_factory_test',
-    '2': 'ski_diamond',
+    '2': 'ski_diamant',
     '3': 'ski_premium',
     '4': 'ski_economy',
     '5': 'ski_basic',

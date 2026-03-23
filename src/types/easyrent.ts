@@ -561,7 +561,7 @@ export type SkillLevel = 'beginner' | 'intermediate' | 'advanced';
 export type EquipmentItem =
   // Alpine skis
   | 'ski_factory_test'
-  | 'ski_diamond'
+  | 'ski_diamant'
   | 'ski_premium'
   | 'ski_economy'
   | 'ski_basic'

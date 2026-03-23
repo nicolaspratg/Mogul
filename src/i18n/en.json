@@ -49,7 +49,7 @@
   "ski_need_prompt": "Does {{firstname}} need skis?\n1 - Yes\n2 - No, boots only",
   "ski_need_invalid": "Please reply with 1 (Yes) or 2 (No, boots only).",
 
-  "ski_model_prompt": "Which skis?\n1 - Factory Test\n2 - Diamond\n3 - Premium\n4 - Economy\n5 - Basic",
+  "ski_model_prompt": "Which skis?\n1 - Factory Test\n2 - diamant\n3 - Premium\n4 - Economy\n5 - Basic",
   "ski_model_invalid": "Please choose a number from 1 to 5.",
 
   "snowboard_boots_prompt": "Does {{firstname}} have snowboard boots?\n1 - Yes, I have my own boots\n2 - No, I need to rent boots",
@@ -121,7 +121,7 @@
   "skill_advanced": "Advanced",
 
   "equipment_item_ski_factory_test": "Ski Factory Test",
-  "equipment_item_ski_diamond": "Ski Diamond",
+  "equipment_item_ski_diamant": "Ski diamant",
   "equipment_item_ski_premium": "Ski Premium",
   "equipment_item_ski_economy": "Ski Economy",
   "equipment_item_ski_basic": "Ski Basic",

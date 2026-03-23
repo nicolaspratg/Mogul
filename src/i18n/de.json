@@ -49,7 +49,7 @@
   "ski_need_prompt": "Braucht {{firstname}} Ski?\n1 - Ja\n2 - Nein, nur Schuhe",
   "ski_need_invalid": "Bitte antworten Sie mit 1 (Ja) oder 2 (Nein, nur Schuhe).",
 
-  "ski_model_prompt": "Welche Ski?\n1 - Factory Test\n2 - Diamond\n3 - Premium\n4 - Economy\n5 - Basic",
+  "ski_model_prompt": "Welche Ski?\n1 - Factory Test\n2 - diamant\n3 - Premium\n4 - Economy\n5 - Basic",
   "ski_model_invalid": "Bitte wählen Sie eine Nummer von 1 bis 5.",
 
   "snowboard_boots_prompt": "Hat {{firstname}} eigene Snowboardschuhe?\n1 - Ja, ich habe eigene Schuhe\n2 - Nein, ich möchte Schuhe mieten",
@@ -121,7 +121,7 @@
   "skill_advanced": "Experte",
 
   "equipment_item_ski_factory_test": "Ski Factory Test",
-  "equipment_item_ski_diamond": "Ski Diamond",
+  "equipment_item_ski_diamant": "Ski diamant",
   "equipment_item_ski_premium": "Ski Premium",
   "equipment_item_ski_economy": "Ski Economy",
   "equipment_item_ski_basic": "Ski Basic",
