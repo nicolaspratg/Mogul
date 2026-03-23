@@ -555,38 +555,65 @@ export interface RestTestAccessParams {
 // ---------------------------------------------------------------------------
 
 export type Language = 'de' | 'en' | 'it';
-export type EquipmentType = 'ski' | 'snowboard' | 'both';
 export type SkillLevel = 'beginner' | 'intermediate' | 'advanced';
+
+/** All rentable equipment items in the winter catalog. */
+export type EquipmentItem =
+  // Alpine skis
+  | 'ski_factory_test'
+  | 'ski_diamond'
+  | 'ski_premium'
+  | 'ski_economy'
+  | 'ski_basic'
+  // Ski boots
+  | 'ski_boots_premium'
+  | 'ski_boots_economy'
+  // Snowboard
+  | 'snowboard_premium'
+  | 'snowboard_economy'
+  | 'snowboard_boots'
+  // Cross country
+  | 'xc_classic'
+  | 'xc_classic_boots'
+  | 'xc_skating'
+  | 'xc_skating_boots'
+  // Touring
+  | 'touring_ski'
+  | 'touring_boots'
+  | 'touring_backpack'
+  | 'touring_radar'
+  | 'touring_shovel'
+  | 'touring_avalanche_bag'
+  | 'touring_probe'
+  // Other
+  | 'helmet_visor'
+  | 'helmet_no_visor'
+  | 'snowshoes'
+  | 'sleigh'
+  // Kids
+  | 'kids_ski'
+  | 'kids_boots';
 
 export interface GroupMember {
   firstname: string;
   lastname: string;
-  heightcm: number;
-  weightkg: number;
-  bootsize: string;
-  solemm: number;
-  skillLevel: SkillLevel;
+  age: number;
+  equipment: EquipmentItem[];
+  heightcm?: number;   // required if alpine/touring/XC/kids skis selected
+  weightkg?: number;   // required if alpine/touring/XC/kids skis selected
+  skillLevel?: SkillLevel; // required if alpine/touring skis selected (adults)
+  solemm?: number;     // required if alpine/touring/kids skis selected AND no boots rented
 }
 
 /**
  * Shape of the `data` jsonb column in the `conversations` table.
- * All fields except `language` are optional — they are populated
- * progressively as the user advances through the 9-step flow.
+ * Populated progressively as the user advances through the flow.
  */
 export interface ConversationData {
   language: Language;
-  firstname?: string;
-  lastname?: string;
   datefrom?: string; // ISO date, e.g. "2025-02-10"
   dateto?: string;
-  equipmentType?: EquipmentType;
-  skillLevel?: SkillLevel;
-  heightcm?: number;
-  weightkg?: number;
-  bootsize?: string;
-  solemm?: number;
-  groupSize?: number;
-  groupMembers?: GroupMember[];
+  members?: GroupMember[];
   easyrentCustomerCode?: string;
   easyrentGroupCode?: string;
 }
