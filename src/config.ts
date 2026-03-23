@@ -1,3 +1,5 @@
+import 'dotenv/config';
+
 /**
  * Application configuration — validated and frozen at startup.
  * All environment variables are accessed exclusively through this module.

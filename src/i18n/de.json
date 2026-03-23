@@ -11,35 +11,81 @@
 
   "person_first_intro": "Beginnen wir mit Ihren Angaben:",
   "person_next_intro": "Person {{index}}:",
-  "person_name_first_prompt": "Vorname:",
-  "person_name_last_prompt": "Nachname:",
-  "person_age_prompt": "Alter:",
-  "person_age_invalid": "Bitte geben Sie ein gültiges Alter ein (1–99).",
-  "name_invalid": "Bitte geben Sie einen gültigen Namen ein (mindestens 1 Zeichen).",
+  "person_name_prompt": "Vorname, Nachname (durch Komma getrennt)\n(z. B. Max, Mustermann):",
+  "person_name_invalid": "Bitte geben Sie Vor- und Nachname durch ein Komma getrennt ein (z. B. Max, Mustermann).",
 
-  "person_equipment_prompt_header": "Was möchte {{firstname}} mieten?\nGeben Sie die Nummern der gewünschten Artikel durch Komma getrennt ein (z. B. 1, 6):",
-  "person_equipment_invalid": "Bitte geben Sie gültige Nummern aus der Liste ein, durch Komma getrennt.",
-  "person_equipment_none": "Bitte wählen Sie mindestens einen Artikel aus.",
+  "person_dob_prompt": "Geburtsdatum:\nFormat: TT.MM.JJJJ (z. B. 15.03.1990)",
+  "person_dob_invalid": "Ungültiges Datum. Bitte verwenden Sie das Format TT.MM.JJJJ (z. B. 15.03.1990).",
+  "person_dob_future": "Das Geburtsdatum darf nicht heute oder in der Zukunft liegen.",
 
-  "person_height_prompt": "Körpergröße in cm (z. B. 175):",
-  "person_height_invalid": "Bitte geben Sie eine Körpergröße zwischen 80 und 230 cm ein.",
-  "person_weight_prompt": "Gewicht in kg (z. B. 75):",
-  "person_weight_invalid": "Bitte geben Sie ein Gewicht zwischen 10 und 200 kg ein.",
-  "person_skill_prompt": "Fahrkönnen:\n1 - Anfänger\n2 - Fortgeschritten\n3 - Experte",
-  "person_skill_invalid": "Bitte wählen Sie 1 (Anfänger), 2 (Fortgeschritten) oder 3 (Experte).",
-  "person_sole_prompt": "Sohlenlänge Ihres Skischuhs in mm (z. B. 285):\n(Steht auf der Innensohle oder an der Ferse des Schuhs.)",
-  "person_sole_invalid": "Bitte geben Sie eine Sohlenlänge zwischen 150 und 380 mm ein.",
+  "equipment_category_prompt_adult": "Was möchte {{firstname}} mieten?\n1 - Ski\n2 - Snowboard\n3 - Sonstiges (Touren, Langlauf, Schneeschuhe...)",
+  "equipment_category_prompt_kid": "Was möchte {{firstname}} mieten?\n1 - Ski\n2 - Snowboard",
+  "equipment_category_invalid_adult": "Bitte wählen Sie 1 (Ski), 2 (Snowboard) oder 3 (Sonstiges).",
+  "equipment_category_invalid_kid": "Bitte wählen Sie 1 (Ski) oder 2 (Snowboard).",
+
+  "ski_skill_prompt": "Welches Fahrkönnen hat {{firstname}}?\n1 - Anfänger\n2 - Fortgeschritten\n3 - Experte",
+  "ski_skill_invalid": "Bitte wählen Sie 1 (Anfänger), 2 (Fortgeschritten) oder 3 (Experte).",
+
+  "ski_boots_prompt": "Hat {{firstname}} eigene Skischuhe?\n1 - Ja, ich habe eigene Schuhe\n2 - Nein, ich möchte Schuhe mieten",
+  "ski_boots_invalid": "Bitte antworten Sie mit 1 (eigene Schuhe) oder 2 (Schuhe mieten).",
+
+  "ski_boots_type_prompt": "Welche Skischuhe?\n1 - Premium\n2 - Economy",
+  "ski_boots_type_invalid": "Bitte wählen Sie 1 (Premium) oder 2 (Economy).",
+
+  "ski_sole_prompt": "Sohlenlänge Ihres Skischuhs in mm (z. B. 285):\n(Steht auf der Innensohle oder an der Ferse des Schuhs.)",
+  "ski_sole_invalid": "Bitte geben Sie eine Sohlenlänge zwischen 150 und 380 mm ein.",
+
+  "ski_need_prompt": "Braucht {{firstname}} Ski?\n1 - Ja\n2 - Nein, nur Schuhe",
+  "ski_need_invalid": "Bitte antworten Sie mit 1 (Ja) oder 2 (Nein, nur Schuhe).",
+
+  "ski_model_prompt": "Welche Ski?\n1 - Factory Test\n2 - Diamond\n3 - Premium\n4 - Economy\n5 - Basic",
+  "ski_model_invalid": "Bitte wählen Sie eine Nummer von 1 bis 5.",
+
+  "snowboard_boots_prompt": "Hat {{firstname}} eigene Snowboardschuhe?\n1 - Ja, ich habe eigene Schuhe\n2 - Nein, ich möchte Schuhe mieten",
+  "snowboard_boots_invalid": "Bitte antworten Sie mit 1 (eigene Schuhe) oder 2 (Schuhe mieten).",
+
+  "snowboard_model_prompt": "Welches Snowboard?\n1 - Premium\n2 - Economy",
+  "snowboard_model_invalid": "Bitte wählen Sie 1 (Premium) oder 2 (Economy).",
+
+  "other_category_prompt": "Welche Kategorie?\n1 - Touren\n2 - Langlauf\n3 - Sonstiges (Schneeschuhe, Schlitten)",
+  "other_category_invalid": "Bitte wählen Sie 1 (Touren), 2 (Langlauf) oder 3 (Sonstiges).",
+
+  "touring_items_prompt": "Welche Tourenausrüstung? Nummern durch Komma getrennt eingeben:\n1 - Tourenski\n2 - Tourenschuhe\n3 - Tourenrucksack\n4 - LVS-Gerät (PEEPS)\n5 - Lawinenschaufel\n6 - Lawinenairbag\n7 - Lawinensonde",
+  "touring_items_invalid": "Bitte geben Sie gültige Nummern von 1 bis 7, durch Komma getrennt, ein.",
+  "touring_items_none": "Bitte wählen Sie mindestens einen Artikel aus.",
+
+  "xc_type_prompt": "Welcher Langlaufstil?\n1 - Klassisch\n2 - Skating",
+  "xc_type_invalid": "Bitte wählen Sie 1 (Klassisch) oder 2 (Skating).",
+
+  "xc_boots_prompt": "Braucht {{firstname}} Langlaufschuhe?\n1 - Ja\n2 - Nein",
+  "xc_boots_invalid": "Bitte antworten Sie mit 1 (Ja) oder 2 (Nein).",
+
+  "misc_item_prompt": "Welcher Artikel?\n1 - Schneeschuhe\n2 - Schlitten",
+  "misc_item_invalid": "Bitte wählen Sie 1 (Schneeschuhe) oder 2 (Schlitten).",
+
+  "helmet_prompt": "Möchte {{firstname}} einen Helm mieten?\n1 - Ja\n2 - Nein",
+  "helmet_invalid": "Bitte antworten Sie mit 1 (Ja) oder 2 (Nein).",
+
+  "helmet_type_prompt": "Welcher Helm?\n1 - Mit Visier\n2 - Ohne Visier",
+  "helmet_type_invalid": "Bitte wählen Sie 1 (Mit Visier) oder 2 (Ohne Visier).",
+
+  "measurements_prompt": "Körpergröße und Gewicht, durch Komma getrennt\n(z. B. 184, 78 — Größe in cm, Gewicht in kg):",
+  "measurements_invalid": "Bitte geben Sie gültige Werte durch Komma getrennt ein (Größe 80–230 cm, Gewicht 10–200 kg).",
+
+  "hotel_prompt": "In welchem Hotel wohnt {{firstname}}?\n(Hotelnamen eingeben, oder \"keins\" falls nicht zutreffend.)",
+  "hotel_invalid": "Bitte geben Sie einen Hotelnamen ein.",
 
   "add_person_prompt": "Möchten Sie eine weitere Person zur Buchung hinzufügen?\n1 - Ja\n2 - Nein, Buchung abschließen",
   "add_person_invalid": "Bitte antworten Sie mit 1 (Ja) oder 2 (Nein).",
 
   "summary_header": "Zusammenfassung Ihrer Buchungsanfrage:",
   "summary_dates": "Zeitraum: {{datefrom}} bis {{dateto}}",
-  "summary_person_header": "Person {{index}}: {{firstname}} {{lastname}} ({{age}} Jahre)",
+  "summary_person_header": "Person {{index}}: {{firstname}} {{lastname}} ({{dob}})",
   "summary_person_equipment": "Ausrüstung: {{equipment}}",
   "summary_person_measurements": "Größe: {{height}} cm | Gewicht: {{weight}} kg",
   "summary_person_skill": "Fahrkönnen: {{skill}}",
   "summary_person_sole": "Sohlenlänge: {{sole}} mm",
+  "summary_person_hotel": "Hotel: {{hotel}}",
 
   "confirm_prompt": "Bitte bestätigen Sie Ihre Buchung mit JA oder lehnen Sie sie mit NEIN ab.",
   "confirm_invalid": "Bitte antworten Sie mit JA oder NEIN.",
@@ -54,14 +100,6 @@
   "skill_beginner": "Anfänger",
   "skill_intermediate": "Fortgeschritten",
   "skill_advanced": "Experte",
-
-  "equipment_section_alpine": "ALPINE SKIER",
-  "equipment_section_ski_boots": "SKISCHUHE",
-  "equipment_section_snowboard": "SNOWBOARD",
-  "equipment_section_xc": "LANGLAUF",
-  "equipment_section_touring": "TOUREN",
-  "equipment_section_other": "SONSTIGES",
-  "equipment_section_kids": "KINDER",
 
   "equipment_item_ski_factory_test": "Ski Factory Test",
   "equipment_item_ski_diamond": "Ski Diamond",

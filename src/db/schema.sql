@@ -1,4 +1,4 @@
--- AlpChat PostgreSQL schema
+-- Mogul PostgreSQL schema
 -- Requires: pgcrypto (for gen_random_uuid) or PostgreSQL 13+ (uuid_generate_v4 via extension)
 -- Run once on a fresh database. Idempotent: uses IF NOT EXISTS throughout.
 

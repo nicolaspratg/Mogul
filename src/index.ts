@@ -1,5 +1,5 @@
 /**
- * AlpChat — entry point.
+ * Mogul — entry point.
  *
  * Starts the Express server, mounts the WhatsApp webhook router,
  * and kicks off the periodic conversation cleanup job.
@@ -52,7 +52,7 @@ function startCleanupJob(): void {
 // ---------------------------------------------------------------------------
 
 app.listen(config.port, () => {
-  console.info(`[server] AlpChat listening on port ${config.port} (${config.nodeEnv})`);
+  console.info(`[server] Mogul listening on port ${config.port} (${config.nodeEnv})`);
   startCleanupJob();
 });
 

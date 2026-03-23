@@ -1,5 +1,5 @@
 /**
- * AlpChat — Easyrent type definitions
+ * Mogul — Easyrent type definitions
  *
  * Covers:
  *  - SOAP API (wseasyrent) method inputs/outputs
@@ -597,12 +597,13 @@ export type EquipmentItem =
 export interface GroupMember {
   firstname: string;
   lastname: string;
-  age: number;
+  dob: string;             // ISO date "YYYY-MM-DD"
   equipment: EquipmentItem[];
-  heightcm?: number;   // required if alpine/touring/XC/kids skis selected
-  weightkg?: number;   // required if alpine/touring/XC/kids skis selected
-  skillLevel?: SkillLevel; // required if alpine/touring skis selected (adults)
-  solemm?: number;     // required if alpine/touring/kids skis selected AND no boots rented
+  heightcm?: number;
+  weightkg?: number;
+  skillLevel?: SkillLevel;
+  solemm?: number;         // own-boot sole length in mm (if customer has their own boots)
+  hotel?: string;
 }
 
 /**

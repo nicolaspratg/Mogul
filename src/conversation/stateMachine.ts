@@ -1,22 +1,30 @@
 /**
- * AlpChat conversation state machine.
+ * Mogul conversation state machine.
  *
  * processMessage(shopId, waPhone, incomingText) → string (reply to send)
  *
  * Flow:
- *  1. WELCOME       → language selection
- *  2. DATE_FROM     → DATE_TO
- *  3. Per-person loop (one or more people):
- *     PERSON_NAME_FIRST → PERSON_NAME_LAST → PERSON_AGE → PERSON_EQUIPMENT
- *     → (conditional) PERSON_HEIGHT → PERSON_WEIGHT → PERSON_SKILL → PERSON_SOLE
- *     → ADD_PERSON  (Yes → loop back to PERSON_NAME_FIRST | No → CONFIRM)
+ *  1. WELCOME           → language selection
+ *  2. DATE_FROM         → DATE_TO
+ *  3. Per-person loop:
+ *     PERSON_NAME       → PERSON_DOB → EQUIPMENT_CATEGORY
+ *     ┌─ Ski:        SKI_SKILL (adults) → SKI_BOOTS → [SKI_BOOTS_TYPE | SKI_SOLE]
+ *     │              → SKI_NEED → [SKI_MODEL] → HELMET → [HELMET_TYPE]
+ *     │              → [MEASUREMENTS] → HOTEL
+ *     ├─ Snowboard:  SNOWBOARD_BOOTS → SNOWBOARD_MODEL → HELMET → [HELMET_TYPE]
+ *     │              → HOTEL
+ *     └─ Other:      OTHER_CATEGORY
+ *        ├─ Touring: TOURING_ITEMS → HELMET → [HELMET_TYPE] → [MEASUREMENTS] → HOTEL
+ *        ├─ XC:      XC_TYPE → XC_BOOTS → MEASUREMENTS → HOTEL
+ *        └─ Misc:    MISC_ITEM → HOTEL
+ *     ADD_PERSON (yes → loop back | no → CONFIRM)
  *  4. CONFIRM → DONE
  *
- * Measurement rules per person:
- *  - Alpine/touring skis, XC skis, kids skis → height + weight
- *  - Alpine/touring skis (adults) → also skill level (1–3)
- *  - Alpine/touring/kids skis AND no boots rented → also sole length (mm)
- *  - All boots, snowboard, helmets, accessories → no measurements
+ * Measurement rule: height + weight required when equipment includes any of
+ *   ski_*, kids_ski, touring_ski, xc_classic, xc_skating.
+ * Skill level: asked upfront for adults in the ski branch.
+ * Sole length: asked when customer has their own boots (ski branch).
+ * Kids (DOB ≤ 14): skip skill level, one-touch kids ski/boots, no Other branch.
  */
 
 import { pool } from '../db/pool';
@@ -38,136 +46,60 @@ import {
 import { restInsertUpdateReservation } from '../integrations/easyrent/restClient';
 
 // ---------------------------------------------------------------------------
-// Equipment catalog
+// Branch type
 // ---------------------------------------------------------------------------
 
-interface CatalogItem {
-  num: number;
-  key: EquipmentItem;
-  labelKey: string;
+type Branch = 'ski' | 'snowboard' | 'touring' | 'xc' | 'misc';
+
+// ---------------------------------------------------------------------------
+// Equipment label map (used in summary)
+// ---------------------------------------------------------------------------
+
+const EQUIPMENT_LABEL_KEYS: Record<EquipmentItem, string> = {
+  ski_factory_test:      'equipment_item_ski_factory_test',
+  ski_diamond:           'equipment_item_ski_diamond',
+  ski_premium:           'equipment_item_ski_premium',
+  ski_economy:           'equipment_item_ski_economy',
+  ski_basic:             'equipment_item_ski_basic',
+  ski_boots_premium:     'equipment_item_ski_boots_premium',
+  ski_boots_economy:     'equipment_item_ski_boots_economy',
+  snowboard_premium:     'equipment_item_snowboard_premium',
+  snowboard_economy:     'equipment_item_snowboard_economy',
+  snowboard_boots:       'equipment_item_snowboard_boots',
+  xc_classic:            'equipment_item_xc_classic',
+  xc_classic_boots:      'equipment_item_xc_classic_boots',
+  xc_skating:            'equipment_item_xc_skating',
+  xc_skating_boots:      'equipment_item_xc_skating_boots',
+  touring_ski:           'equipment_item_touring_ski',
+  touring_boots:         'equipment_item_touring_boots',
+  touring_backpack:      'equipment_item_touring_backpack',
+  touring_radar:         'equipment_item_touring_radar',
+  touring_shovel:        'equipment_item_touring_shovel',
+  touring_avalanche_bag: 'equipment_item_touring_avalanche_bag',
+  touring_probe:         'equipment_item_touring_probe',
+  helmet_visor:          'equipment_item_helmet_visor',
+  helmet_no_visor:       'equipment_item_helmet_no_visor',
+  snowshoes:             'equipment_item_snowshoes',
+  sleigh:                'equipment_item_sleigh',
+  kids_ski:              'equipment_item_kids_ski',
+  kids_boots:            'equipment_item_kids_boots',
+};
+
+function equipmentLabels(items: EquipmentItem[], language: Language): string {
+  return items.map(item => t(language, EQUIPMENT_LABEL_KEYS[item])).join(', ');
 }
-
-interface CatalogSection {
-  titleKey: string;
-  items: CatalogItem[];
-}
-
-const ADULT_CATALOG_SECTIONS: CatalogSection[] = [
-  {
-    titleKey: 'equipment_section_alpine',
-    items: [
-      { num: 1,  key: 'ski_factory_test',     labelKey: 'equipment_item_ski_factory_test' },
-      { num: 2,  key: 'ski_diamond',           labelKey: 'equipment_item_ski_diamond' },
-      { num: 3,  key: 'ski_premium',           labelKey: 'equipment_item_ski_premium' },
-      { num: 4,  key: 'ski_economy',           labelKey: 'equipment_item_ski_economy' },
-      { num: 5,  key: 'ski_basic',             labelKey: 'equipment_item_ski_basic' },
-    ],
-  },
-  {
-    titleKey: 'equipment_section_ski_boots',
-    items: [
-      { num: 6,  key: 'ski_boots_premium',     labelKey: 'equipment_item_ski_boots_premium' },
-      { num: 7,  key: 'ski_boots_economy',     labelKey: 'equipment_item_ski_boots_economy' },
-    ],
-  },
-  {
-    titleKey: 'equipment_section_snowboard',
-    items: [
-      { num: 8,  key: 'snowboard_premium',     labelKey: 'equipment_item_snowboard_premium' },
-      { num: 9,  key: 'snowboard_economy',     labelKey: 'equipment_item_snowboard_economy' },
-      { num: 10, key: 'snowboard_boots',       labelKey: 'equipment_item_snowboard_boots' },
-    ],
-  },
-  {
-    titleKey: 'equipment_section_xc',
-    items: [
-      { num: 11, key: 'xc_classic',            labelKey: 'equipment_item_xc_classic' },
-      { num: 12, key: 'xc_classic_boots',      labelKey: 'equipment_item_xc_classic_boots' },
-      { num: 13, key: 'xc_skating',            labelKey: 'equipment_item_xc_skating' },
-      { num: 14, key: 'xc_skating_boots',      labelKey: 'equipment_item_xc_skating_boots' },
-    ],
-  },
-  {
-    titleKey: 'equipment_section_touring',
-    items: [
-      { num: 15, key: 'touring_ski',           labelKey: 'equipment_item_touring_ski' },
-      { num: 16, key: 'touring_boots',         labelKey: 'equipment_item_touring_boots' },
-      { num: 17, key: 'touring_backpack',      labelKey: 'equipment_item_touring_backpack' },
-      { num: 18, key: 'touring_radar',         labelKey: 'equipment_item_touring_radar' },
-      { num: 19, key: 'touring_shovel',        labelKey: 'equipment_item_touring_shovel' },
-      { num: 20, key: 'touring_avalanche_bag', labelKey: 'equipment_item_touring_avalanche_bag' },
-      { num: 21, key: 'touring_probe',         labelKey: 'equipment_item_touring_probe' },
-    ],
-  },
-  {
-    titleKey: 'equipment_section_other',
-    items: [
-      { num: 22, key: 'helmet_visor',          labelKey: 'equipment_item_helmet_visor' },
-      { num: 23, key: 'helmet_no_visor',       labelKey: 'equipment_item_helmet_no_visor' },
-      { num: 24, key: 'snowshoes',             labelKey: 'equipment_item_snowshoes' },
-      { num: 25, key: 'sleigh',                labelKey: 'equipment_item_sleigh' },
-    ],
-  },
-];
-
-const KIDS_CATALOG_SECTIONS: CatalogSection[] = [
-  {
-    titleKey: 'equipment_section_kids',
-    items: [
-      { num: 1, key: 'kids_ski',        labelKey: 'equipment_item_kids_ski' },
-      { num: 2, key: 'kids_boots',      labelKey: 'equipment_item_kids_boots' },
-    ],
-  },
-  {
-    titleKey: 'equipment_section_other',
-    items: [
-      { num: 3, key: 'helmet_visor',    labelKey: 'equipment_item_helmet_visor' },
-      { num: 4, key: 'helmet_no_visor', labelKey: 'equipment_item_helmet_no_visor' },
-      { num: 5, key: 'snowshoes',       labelKey: 'equipment_item_snowshoes' },
-      { num: 6, key: 'sleigh',          labelKey: 'equipment_item_sleigh' },
-    ],
-  },
-];
 
 // ---------------------------------------------------------------------------
 // Equipment logic helpers
 // ---------------------------------------------------------------------------
 
-const ALPINE_TOURING_SKI_ITEMS: EquipmentItem[] = [
-  'ski_factory_test', 'ski_diamond', 'ski_premium', 'ski_economy', 'ski_basic', 'touring_ski',
-];
-const XC_SKI_ITEMS: EquipmentItem[] = ['xc_classic', 'xc_skating'];
-const KIDS_SKI_ITEMS: EquipmentItem[] = ['kids_ski'];
-const BOOT_ITEMS: EquipmentItem[] = [
-  'ski_boots_premium', 'ski_boots_economy', 'touring_boots', 'kids_boots',
+const MEASUREMENT_ITEMS: EquipmentItem[] = [
+  'ski_factory_test', 'ski_diamond', 'ski_premium', 'ski_economy', 'ski_basic',
+  'kids_ski', 'touring_ski', 'xc_classic', 'xc_skating',
 ];
 
-function hasAlpineOrTouringSki(items: EquipmentItem[]): boolean {
-  return items.some(i => ALPINE_TOURING_SKI_ITEMS.includes(i));
-}
-function hasKidsSki(items: EquipmentItem[]): boolean {
-  return items.some(i => KIDS_SKI_ITEMS.includes(i));
-}
-function hasXcSki(items: EquipmentItem[]): boolean {
-  return items.some(i => XC_SKI_ITEMS.includes(i));
-}
-function hasBoots(items: EquipmentItem[]): boolean {
-  return items.some(i => BOOT_ITEMS.includes(i));
-}
-
-/** Height + weight required */
 function needsMeasurements(items: EquipmentItem[]): boolean {
-  return hasAlpineOrTouringSki(items) || hasKidsSki(items) || hasXcSki(items);
-}
-
-/** Skill level required (alpine + touring skis only, not XC, not kids) */
-function needsSkillLevel(items: EquipmentItem[]): boolean {
-  return hasAlpineOrTouringSki(items);
-}
-
-/** Sole length required: ski present but no boots rented */
-function needsSoleLength(items: EquipmentItem[]): boolean {
-  return (hasAlpineOrTouringSki(items) || hasKidsSki(items)) && !hasBoots(items);
+  return items.some(i => MEASUREMENT_ITEMS.includes(i));
 }
 
 // ---------------------------------------------------------------------------
@@ -175,26 +107,45 @@ function needsSoleLength(items: EquipmentItem[]): boolean {
 // ---------------------------------------------------------------------------
 
 export enum ConversationStep {
-  WELCOME           = 'welcome',
-  DATE_FROM         = 'date_from',
-  DATE_TO           = 'date_to',
-  PERSON_NAME_FIRST = 'person_name_first',
-  PERSON_NAME_LAST  = 'person_name_last',
-  PERSON_AGE        = 'person_age',
-  PERSON_EQUIPMENT  = 'person_equipment',
-  PERSON_HEIGHT     = 'person_height',
-  PERSON_WEIGHT     = 'person_weight',
-  PERSON_SKILL      = 'person_skill',
-  PERSON_SOLE       = 'person_sole',
-  ADD_PERSON        = 'add_person',
-  CONFIRM           = 'confirm',
-  DONE              = 'done',
+  WELCOME            = 'welcome',
+  DATE_FROM          = 'date_from',
+  DATE_TO            = 'date_to',
+  // Per-person
+  PERSON_NAME        = 'person_name',
+  PERSON_DOB         = 'person_dob',
+  EQUIPMENT_CATEGORY = 'equipment_category',
+  // Ski branch
+  SKI_SKILL          = 'ski_skill',
+  SKI_BOOTS          = 'ski_boots',
+  SKI_BOOTS_TYPE     = 'ski_boots_type',
+  SKI_SOLE           = 'ski_sole',
+  SKI_NEED           = 'ski_need',
+  SKI_MODEL          = 'ski_model',
+  // Snowboard branch
+  SNOWBOARD_BOOTS    = 'snowboard_boots',
+  SNOWBOARD_MODEL    = 'snowboard_model',
+  // Other branch
+  OTHER_CATEGORY     = 'other_category',
+  TOURING_ITEMS      = 'touring_items',
+  XC_TYPE            = 'xc_type',
+  XC_BOOTS           = 'xc_boots',
+  MISC_ITEM          = 'misc_item',
+  // Shared post-equipment
+  HELMET             = 'helmet',
+  HELMET_TYPE        = 'helmet_type',
+  MEASUREMENTS       = 'measurements',
+  HOTEL              = 'hotel',
+  // Group + completion
+  ADD_PERSON         = 'add_person',
+  CONFIRM            = 'confirm',
+  DONE               = 'done',
 }
 
 interface InternalData extends ConversationData {
   currentMember?: Partial<GroupMember>;
-  /** Placeholder for future availability check — needs rework for multi-item bookings. */
+  currentBranch?: Branch;
   rentalGroupIds?: number[];
+  groupHotel?: string;
 }
 
 interface StepResult {
@@ -249,18 +200,50 @@ function parseDate(input: string): string | null {
   return null;
 }
 
+function parseDob(input: string): string | 'future' | null {
+  const iso = parseDate(input);
+  if (!iso) return null;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  if (new Date(iso) >= today) return 'future';
+  return iso;
+}
+
 function isoToDisplay(iso: string): string {
   const [y, m, d] = iso.split('-');
   return `${d}.${m}.${y}`;
 }
 
-function parsePositiveFloat(input: string): number | null {
-  const n = parseFloat(input.replace(',', '.'));
-  return isNaN(n) || n <= 0 ? null : n;
+function getAge(dob: string): number {
+  const birth = new Date(dob);
+  const today = new Date();
+  let age = today.getFullYear() - birth.getFullYear();
+  const m = today.getMonth() - birth.getMonth();
+  if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
+  return age;
 }
 
-function parsePositiveInt(input: string): number | null {
-  const n = parseInt(input.trim(), 10);
+function isKid(dob: string): boolean {
+  return getAge(dob) <= 14;
+}
+
+function parseName(input: string): { firstname: string; lastname: string } | null {
+  const parts = input.split(',').map(s => s.trim()).filter(Boolean);
+  if (parts.length < 2) return null;
+  return { firstname: parts[0], lastname: parts.slice(1).join(' ') };
+}
+
+function parseMeasurements(input: string): { heightcm: number; weightkg: number } | null {
+  const parts = input.split(/[,\s]+/).filter(Boolean);
+  if (parts.length < 2) return null;
+  const h = parseFloat(parts[0]);
+  const w = parseFloat(parts[1]);
+  if (isNaN(h) || isNaN(w) || h < 80 || h > 230 || w < 10 || w > 200) return null;
+  return { heightcm: Math.round(h), weightkg: Math.round(w) };
+}
+
+function parsePositiveFloat(input: string): number | null {
+  const n = parseFloat(input.trim().replace(',', '.'));
   return isNaN(n) || n <= 0 ? null : n;
 }
 
@@ -303,86 +286,41 @@ function skillLabel(skill: SkillLevel, language: Language): string {
 }
 
 // ---------------------------------------------------------------------------
-// Equipment catalog helpers
-// ---------------------------------------------------------------------------
-
-function getCatalogSections(age: number): CatalogSection[] {
-  return age <= 14 ? KIDS_CATALOG_SECTIONS : ADULT_CATALOG_SECTIONS;
-}
-
-function buildEquipmentMenu(sections: CatalogSection[], language: Language): string {
-  const lines: string[] = [];
-  for (const section of sections) {
-    lines.push(t(language, section.titleKey) + ':');
-    for (const item of section.items) {
-      lines.push(`${item.num} - ${t(language, item.labelKey)}`);
-    }
-    lines.push('');
-  }
-  return lines.join('\n').trimEnd();
-}
-
-function buildEquipmentPrompt(age: number, firstname: string, language: Language): string {
-  const sections = getCatalogSections(age);
-  const header = t(language, 'person_equipment_prompt_header', { firstname });
-  const menu = buildEquipmentMenu(sections, language);
-  return `${header}\n\n${menu}`;
-}
-
-function parseEquipmentSelection(input: string, age: number): EquipmentItem[] | null {
-  const sections = getCatalogSections(age);
-  const allItems = sections.flatMap(s => s.items);
-  const numToKey = new Map(allItems.map(i => [i.num, i.key]));
-
-  const parts = input.split(/[\s,]+/).filter(Boolean);
-  if (parts.length === 0) return null;
-
-  const selected: EquipmentItem[] = [];
-  for (const part of parts) {
-    const num = parseInt(part.trim(), 10);
-    if (isNaN(num)) return null;
-    const key = numToKey.get(num);
-    if (!key) return null;
-    if (!selected.includes(key)) selected.push(key);
-  }
-  return selected.length > 0 ? selected : null;
-}
-
-function equipmentLabels(items: EquipmentItem[], language: Language): string {
-  const allSections = [...ADULT_CATALOG_SECTIONS, ...KIDS_CATALOG_SECTIONS];
-  const keyToLabelKey = new Map(allSections.flatMap(s => s.items).map(i => [i.key, i.labelKey]));
-  return items.map(item => t(language, keyToLabelKey.get(item) ?? item)).join(', ');
-}
-
-// ---------------------------------------------------------------------------
-// Measurement step router
+// Post-helmet routing helper
 // ---------------------------------------------------------------------------
 
 /**
- * After saving a measurement value, determine the next step + prompt.
- * Called after PERSON_EQUIPMENT and each measurement step.
- * Returns ADD_PERSON when all required measurements are collected.
+ * Route to HOTEL, or skip it entirely when the group hotel is already known.
  */
-function nextMeasurementStep(
-  member: Partial<GroupMember>,
-  language: Language,
-): { step: ConversationStep; prompt: string } {
-  const items = member.equipment ?? [];
+function hotelRouting(data: InternalData, member: Partial<GroupMember>, language: Language): StepResult {
+  if (data.groupHotel) {
+    const memberWithHotel = { ...member, hotel: data.groupHotel };
+    return {
+      nextStep: ConversationStep.ADD_PERSON,
+      updatedData: { ...data, currentMember: memberWithHotel },
+      reply: t(language, 'add_person_prompt'),
+    };
+  }
+  return {
+    nextStep: ConversationStep.HOTEL,
+    updatedData: { ...data, currentMember: member },
+    reply: t(language, 'hotel_prompt', { firstname: member.firstname ?? '' }),
+  };
+}
 
-  if (needsMeasurements(items) && member.heightcm === undefined) {
-    return { step: ConversationStep.PERSON_HEIGHT, prompt: t(language, 'person_height_prompt') };
+/**
+ * After HELMET or HELMET_TYPE, route to MEASUREMENTS (if ski-type equipment
+ * is present) or directly to HOTEL (or skip hotel if already known).
+ */
+function afterHelmet(data: InternalData, member: Partial<GroupMember>, language: Language): StepResult {
+  if (needsMeasurements(member.equipment ?? [])) {
+    return {
+      nextStep: ConversationStep.MEASUREMENTS,
+      updatedData: { ...data, currentMember: member },
+      reply: t(language, 'measurements_prompt'),
+    };
   }
-  if (needsMeasurements(items) && member.weightkg === undefined) {
-    return { step: ConversationStep.PERSON_WEIGHT, prompt: t(language, 'person_weight_prompt') };
-  }
-  if (needsSkillLevel(items) && member.skillLevel === undefined) {
-    return { step: ConversationStep.PERSON_SKILL, prompt: t(language, 'person_skill_prompt') };
-  }
-  if (needsSoleLength(items) && member.solemm === undefined) {
-    return { step: ConversationStep.PERSON_SOLE, prompt: t(language, 'person_sole_prompt') };
-  }
-
-  return { step: ConversationStep.ADD_PERSON, prompt: t(language, 'add_person_prompt') };
+  return hotelRouting(data, member, language);
 }
 
 // ---------------------------------------------------------------------------
@@ -392,42 +330,37 @@ function nextMeasurementStep(
 function buildSummary(data: InternalData, language: Language): string {
   const lines: string[] = [t(language, 'summary_header'), ''];
 
-  lines.push(
-    t(language, 'summary_dates', {
-      datefrom: data.datefrom ? isoToDisplay(data.datefrom) : '',
-      dateto: data.dateto ? isoToDisplay(data.dateto) : '',
-    }),
-  );
+  lines.push(t(language, 'summary_dates', {
+    datefrom: data.datefrom ? isoToDisplay(data.datefrom) : '',
+    dateto:   data.dateto   ? isoToDisplay(data.dateto)   : '',
+  }));
 
   const members = data.members ?? [];
   members.forEach((m, i) => {
     lines.push('');
-    lines.push(
-      t(language, 'summary_person_header', {
-        index: i + 1,
-        firstname: m.firstname,
-        lastname: m.lastname,
-        age: m.age,
-      }),
-    );
-    lines.push(
-      t(language, 'summary_person_equipment', {
-        equipment: equipmentLabels(m.equipment, language),
-      }),
-    );
+    lines.push(t(language, 'summary_person_header', {
+      index:     i + 1,
+      firstname: m.firstname,
+      lastname:  m.lastname,
+      dob:       isoToDisplay(m.dob),
+    }));
+    lines.push(t(language, 'summary_person_equipment', {
+      equipment: equipmentLabels(m.equipment, language),
+    }));
     if (m.heightcm !== undefined && m.weightkg !== undefined) {
-      lines.push(
-        t(language, 'summary_person_measurements', {
-          height: m.heightcm,
-          weight: m.weightkg,
-        }),
-      );
+      lines.push(t(language, 'summary_person_measurements', {
+        height: m.heightcm,
+        weight: m.weightkg,
+      }));
     }
     if (m.skillLevel !== undefined) {
       lines.push(t(language, 'summary_person_skill', { skill: skillLabel(m.skillLevel, language) }));
     }
     if (m.solemm !== undefined) {
       lines.push(t(language, 'summary_person_sole', { sole: m.solemm }));
+    }
+    if (m.hotel) {
+      lines.push(t(language, 'summary_person_hotel', { hotel: m.hotel }));
     }
   });
 
@@ -476,10 +409,7 @@ function handleDateFrom(data: InternalData, input: string): StepResult | 'past' 
   };
 }
 
-function handleDateTo(
-  data: InternalData,
-  input: string,
-): StepResult | 'invalid' | 'past' | 'order' {
+function handleDateTo(data: InternalData, input: string): StepResult | 'invalid' | 'past' | 'order' {
   const iso = parseDate(input);
   if (!iso) return 'invalid';
   const today = new Date();
@@ -487,134 +417,446 @@ function handleDateTo(
   if (new Date(iso) < today) return 'past';
   if (data.datefrom && new Date(iso) <= new Date(data.datefrom)) return 'order';
   return {
-    nextStep: ConversationStep.PERSON_NAME_FIRST,
+    nextStep: ConversationStep.PERSON_NAME,
     updatedData: { ...data, dateto: iso, members: [] },
-    reply: t(data.language, 'person_first_intro') + '\n' + t(data.language, 'person_name_first_prompt'),
+    reply: t(data.language, 'person_first_intro') + '\n' + t(data.language, 'person_name_prompt'),
   };
 }
 
-function handlePersonNameFirst(data: InternalData, input: string): StepResult | null {
-  const name = input.trim();
+function handlePersonName(data: InternalData, input: string): StepResult | null {
+  const name = parseName(input);
   if (!name) return null;
   return {
-    nextStep: ConversationStep.PERSON_NAME_LAST,
-    updatedData: { ...data, currentMember: { ...data.currentMember, firstname: name } },
-    reply: t(data.language, 'person_name_last_prompt'),
+    nextStep: ConversationStep.PERSON_DOB,
+    updatedData: { ...data, currentMember: { ...name, equipment: [] } },
+    reply: t(data.language, 'person_dob_prompt'),
   };
 }
 
-function handlePersonNameLast(data: InternalData, input: string): StepResult | null {
-  const name = input.trim();
-  if (!name) return null;
-  return {
-    nextStep: ConversationStep.PERSON_AGE,
-    updatedData: { ...data, currentMember: { ...data.currentMember, lastname: name } },
-    reply: t(data.language, 'person_age_prompt'),
-  };
-}
+function handlePersonDob(data: InternalData, input: string): StepResult | 'invalid' | 'future' {
+  const result = parseDob(input);
+  if (!result) return 'invalid';
+  if (result === 'future') return 'future';
 
-function handlePersonAge(data: InternalData, input: string): StepResult | null {
-  const n = parsePositiveInt(input);
-  if (!n || n > 99) return null;
-  const member = { ...data.currentMember, age: n };
+  const member = { ...data.currentMember, dob: result };
+  const kid = isKid(result);
   return {
-    nextStep: ConversationStep.PERSON_EQUIPMENT,
+    nextStep: ConversationStep.EQUIPMENT_CATEGORY,
     updatedData: { ...data, currentMember: member },
-    reply: buildEquipmentPrompt(n, member.firstname ?? '', data.language),
+    reply: t(data.language, kid ? 'equipment_category_prompt_kid' : 'equipment_category_prompt_adult', {
+      firstname: member.firstname ?? '',
+    }),
   };
 }
 
-function handlePersonEquipment(
-  data: InternalData,
-  input: string,
-): StepResult | 'invalid' | 'none' {
-  const age = data.currentMember?.age ?? 99;
-  const selected = parseEquipmentSelection(input, age);
-  if (!selected) return 'invalid';
-  if (selected.length === 0) return 'none';
+function handleEquipmentCategory(data: InternalData, input: string): StepResult | null {
+  const choice = input.trim();
+  const kid = isKid(data.currentMember?.dob ?? '1900-01-01');
+  const firstname = data.currentMember?.firstname ?? '';
 
-  const member = { ...data.currentMember, equipment: selected };
-  const { step, prompt } = nextMeasurementStep(member, data.language);
-  return {
-    nextStep: step,
-    updatedData: { ...data, currentMember: member },
-    reply: prompt,
-  };
+  if (choice === '1') {
+    if (kid) {
+      return {
+        nextStep: ConversationStep.SKI_BOOTS,
+        updatedData: { ...data, currentBranch: 'ski' },
+        reply: t(data.language, 'ski_boots_prompt', { firstname }),
+      };
+    }
+    return {
+      nextStep: ConversationStep.SKI_SKILL,
+      updatedData: { ...data, currentBranch: 'ski' },
+      reply: t(data.language, 'ski_skill_prompt', { firstname }),
+    };
+  }
+
+  if (choice === '2') {
+    return {
+      nextStep: ConversationStep.SNOWBOARD_BOOTS,
+      updatedData: { ...data, currentBranch: 'snowboard' },
+      reply: t(data.language, 'snowboard_boots_prompt', { firstname }),
+    };
+  }
+
+  if (choice === '3' && !kid) {
+    return {
+      nextStep: ConversationStep.OTHER_CATEGORY,
+      updatedData: { ...data },
+      reply: t(data.language, 'other_category_prompt'),
+    };
+  }
+
+  return null;
 }
 
-function handlePersonHeight(data: InternalData, input: string): StepResult | 'invalid' {
-  const n = parsePositiveFloat(input);
-  if (!n || n < 80 || n > 230) return 'invalid';
-  const member = { ...data.currentMember, heightcm: Math.round(n) };
-  const { step, prompt } = nextMeasurementStep(member, data.language);
-  return {
-    nextStep: step,
-    updatedData: { ...data, currentMember: member },
-    reply: prompt,
-  };
-}
+// --- Ski branch ---
 
-function handlePersonWeight(data: InternalData, input: string): StepResult | 'invalid' {
-  const n = parsePositiveFloat(input);
-  if (!n || n < 10 || n > 200) return 'invalid';
-  const member = { ...data.currentMember, weightkg: Math.round(n) };
-  const { step, prompt } = nextMeasurementStep(member, data.language);
-  return {
-    nextStep: step,
-    updatedData: { ...data, currentMember: member },
-    reply: prompt,
-  };
-}
-
-function handlePersonSkill(data: InternalData, input: string): StepResult | null {
+function handleSkiSkill(data: InternalData, input: string): StepResult | null {
   const skill = skillFromInput(input);
   if (!skill) return null;
-  const member = { ...data.currentMember, skillLevel: skill };
-  const { step, prompt } = nextMeasurementStep(member, data.language);
   return {
-    nextStep: step,
-    updatedData: { ...data, currentMember: member },
-    reply: prompt,
+    nextStep: ConversationStep.SKI_BOOTS,
+    updatedData: { ...data, currentMember: { ...data.currentMember, skillLevel: skill } },
+    reply: t(data.language, 'ski_boots_prompt', { firstname: data.currentMember?.firstname ?? '' }),
   };
 }
 
-function handlePersonSole(data: InternalData, input: string): StepResult | 'invalid' {
+function handleSkiBoots(data: InternalData, input: string): StepResult | null {
+  const choice = input.trim();
+  const kid = isKid(data.currentMember?.dob ?? '1900-01-01');
+  const firstname = data.currentMember?.firstname ?? '';
+
+  if (choice === '1') {
+    // Has own boots → ask sole length
+    return {
+      nextStep: ConversationStep.SKI_SOLE,
+      updatedData: { ...data },
+      reply: t(data.language, 'ski_sole_prompt'),
+    };
+  }
+
+  if (choice === '2') {
+    if (kid) {
+      // Kids: auto-add kids_boots, skip type selection
+      const equipment = [...(data.currentMember?.equipment ?? []), 'kids_boots' as EquipmentItem];
+      return {
+        nextStep: ConversationStep.SKI_NEED,
+        updatedData: { ...data, currentMember: { ...data.currentMember, equipment } },
+        reply: t(data.language, 'ski_need_prompt', { firstname }),
+      };
+    }
+    return {
+      nextStep: ConversationStep.SKI_BOOTS_TYPE,
+      updatedData: { ...data },
+      reply: t(data.language, 'ski_boots_type_prompt'),
+    };
+  }
+
+  return null;
+}
+
+function handleSkiBootsType(data: InternalData, input: string): StepResult | null {
+  const itemMap: Record<string, EquipmentItem> = {
+    '1': 'ski_boots_premium',
+    '2': 'ski_boots_economy',
+  };
+  const item = itemMap[input.trim()];
+  if (!item) return null;
+
+  const equipment = [...(data.currentMember?.equipment ?? []), item];
+  return {
+    nextStep: ConversationStep.SKI_NEED,
+    updatedData: { ...data, currentMember: { ...data.currentMember, equipment } },
+    reply: t(data.language, 'ski_need_prompt', { firstname: data.currentMember?.firstname ?? '' }),
+  };
+}
+
+function handleSkiSole(data: InternalData, input: string): StepResult | 'invalid' {
   const n = parsePositiveFloat(input);
   if (!n || n < 150 || n > 380) return 'invalid';
   const member = { ...data.currentMember, solemm: Math.round(n) };
-  const { step, prompt } = nextMeasurementStep(member, data.language);
+  const kid = isKid(member.dob ?? '1900-01-01');
+  if (kid) {
+    const equipment = [...(member.equipment ?? []), 'kids_ski' as EquipmentItem];
+    return {
+      nextStep: ConversationStep.HELMET,
+      updatedData: { ...data, currentMember: { ...member, equipment } },
+      reply: t(data.language, 'helmet_prompt', { firstname: member.firstname ?? '' }),
+    };
+  }
   return {
-    nextStep: step,
+    nextStep: ConversationStep.SKI_MODEL,
     updatedData: { ...data, currentMember: member },
-    reply: prompt,
+    reply: t(data.language, 'ski_model_prompt'),
   };
 }
+
+function handleSkiNeed(data: InternalData, input: string): StepResult | null {
+  const choice = input.trim();
+  const kid = isKid(data.currentMember?.dob ?? '1900-01-01');
+  const firstname = data.currentMember?.firstname ?? '';
+
+  if (choice === '1') {
+    if (kid) {
+      const equipment = [...(data.currentMember?.equipment ?? []), 'kids_ski' as EquipmentItem];
+      const member = { ...data.currentMember, equipment };
+      return {
+        nextStep: ConversationStep.HELMET,
+        updatedData: { ...data, currentMember: member },
+        reply: t(data.language, 'helmet_prompt', { firstname }),
+      };
+    }
+    return {
+      nextStep: ConversationStep.SKI_MODEL,
+      updatedData: { ...data },
+      reply: t(data.language, 'ski_model_prompt'),
+    };
+  }
+
+  if (choice === '2') {
+    // Boots only — go to helmet
+    return {
+      nextStep: ConversationStep.HELMET,
+      updatedData: { ...data },
+      reply: t(data.language, 'helmet_prompt', { firstname }),
+    };
+  }
+
+  return null;
+}
+
+function handleSkiModel(data: InternalData, input: string): StepResult | null {
+  const itemMap: Record<string, EquipmentItem> = {
+    '1': 'ski_factory_test',
+    '2': 'ski_diamond',
+    '3': 'ski_premium',
+    '4': 'ski_economy',
+    '5': 'ski_basic',
+  };
+  const item = itemMap[input.trim()];
+  if (!item) return null;
+
+  const equipment = [...(data.currentMember?.equipment ?? []), item];
+  const member = { ...data.currentMember, equipment };
+  return {
+    nextStep: ConversationStep.HELMET,
+    updatedData: { ...data, currentMember: member },
+    reply: t(data.language, 'helmet_prompt', { firstname: member.firstname ?? '' }),
+  };
+}
+
+// --- Snowboard branch ---
+
+function handleSnowboardBoots(data: InternalData, input: string): StepResult | null {
+  const choice = input.trim();
+
+  if (choice === '1') {
+    return {
+      nextStep: ConversationStep.SNOWBOARD_MODEL,
+      updatedData: { ...data },
+      reply: t(data.language, 'snowboard_model_prompt'),
+    };
+  }
+  if (choice === '2') {
+    const equipment = [...(data.currentMember?.equipment ?? []), 'snowboard_boots' as EquipmentItem];
+    return {
+      nextStep: ConversationStep.SNOWBOARD_MODEL,
+      updatedData: { ...data, currentMember: { ...data.currentMember, equipment } },
+      reply: t(data.language, 'snowboard_model_prompt'),
+    };
+  }
+  return null;
+}
+
+function handleSnowboardModel(data: InternalData, input: string): StepResult | null {
+  const itemMap: Record<string, EquipmentItem> = {
+    '1': 'snowboard_premium',
+    '2': 'snowboard_economy',
+  };
+  const item = itemMap[input.trim()];
+  if (!item) return null;
+
+  const equipment = [...(data.currentMember?.equipment ?? []), item];
+  const member = { ...data.currentMember, equipment };
+  return {
+    nextStep: ConversationStep.HELMET,
+    updatedData: { ...data, currentMember: member },
+    reply: t(data.language, 'helmet_prompt', { firstname: member.firstname ?? '' }),
+  };
+}
+
+// --- Other branch ---
+
+function handleOtherCategory(data: InternalData, input: string): StepResult | null {
+  const choice = input.trim();
+
+  if (choice === '1') {
+    return {
+      nextStep: ConversationStep.TOURING_ITEMS,
+      updatedData: { ...data, currentBranch: 'touring' },
+      reply: t(data.language, 'touring_items_prompt'),
+    };
+  }
+  if (choice === '2') {
+    return {
+      nextStep: ConversationStep.XC_TYPE,
+      updatedData: { ...data, currentBranch: 'xc' },
+      reply: t(data.language, 'xc_type_prompt'),
+    };
+  }
+  if (choice === '3') {
+    return {
+      nextStep: ConversationStep.MISC_ITEM,
+      updatedData: { ...data, currentBranch: 'misc' },
+      reply: t(data.language, 'misc_item_prompt'),
+    };
+  }
+  return null;
+}
+
+function handleTouringItems(
+  data: InternalData,
+  input: string,
+): StepResult | 'invalid' | 'none' {
+  const itemMap: Record<string, EquipmentItem> = {
+    '1': 'touring_ski',
+    '2': 'touring_boots',
+    '3': 'touring_backpack',
+    '4': 'touring_radar',
+    '5': 'touring_shovel',
+    '6': 'touring_avalanche_bag',
+    '7': 'touring_probe',
+  };
+
+  const parts = input.split(/[\s,]+/).filter(Boolean);
+  if (parts.length === 0) return 'none';
+
+  const selected: EquipmentItem[] = [];
+  for (const part of parts) {
+    const item = itemMap[part.trim()];
+    if (!item) return 'invalid';
+    if (!selected.includes(item)) selected.push(item);
+  }
+  if (selected.length === 0) return 'none';
+
+  const equipment = [...(data.currentMember?.equipment ?? []), ...selected];
+  const member = { ...data.currentMember, equipment };
+  return {
+    nextStep: ConversationStep.HELMET,
+    updatedData: { ...data, currentMember: member },
+    reply: t(data.language, 'helmet_prompt', { firstname: member.firstname ?? '' }),
+  };
+}
+
+function handleXcType(data: InternalData, input: string): StepResult | null {
+  const itemMap: Record<string, EquipmentItem> = {
+    '1': 'xc_classic',
+    '2': 'xc_skating',
+  };
+  const item = itemMap[input.trim()];
+  if (!item) return null;
+
+  const equipment = [...(data.currentMember?.equipment ?? []), item];
+  return {
+    nextStep: ConversationStep.XC_BOOTS,
+    updatedData: { ...data, currentMember: { ...data.currentMember, equipment } },
+    reply: t(data.language, 'xc_boots_prompt', { firstname: data.currentMember?.firstname ?? '' }),
+  };
+}
+
+function handleXcBoots(data: InternalData, input: string): StepResult | null {
+  const choice = input.trim();
+  const currentEquipment = data.currentMember?.equipment ?? [];
+
+  if (choice !== '1' && choice !== '2') return null;
+
+  let equipment = [...currentEquipment];
+  if (choice === '1') {
+    const bootsItem: EquipmentItem = currentEquipment.includes('xc_classic')
+      ? 'xc_classic_boots'
+      : 'xc_skating_boots';
+    equipment = [...equipment, bootsItem];
+  }
+
+  const member = { ...data.currentMember, equipment };
+  // XC: no helmet — always goes to measurements (XC ski is always present)
+  return {
+    nextStep: ConversationStep.MEASUREMENTS,
+    updatedData: { ...data, currentMember: member },
+    reply: t(data.language, 'measurements_prompt'),
+  };
+}
+
+function handleMiscItem(data: InternalData, input: string): StepResult | null {
+  const itemMap: Record<string, EquipmentItem> = {
+    '1': 'snowshoes',
+    '2': 'sleigh',
+  };
+  const item = itemMap[input.trim()];
+  if (!item) return null;
+
+  const equipment = [...(data.currentMember?.equipment ?? []), item];
+  const member = { ...data.currentMember, equipment };
+  // Misc: no helmet, no measurements
+  return hotelRouting(data, member, data.language);
+}
+
+// --- Shared: Helmet, Measurements, Hotel ---
+
+function handleHelmet(data: InternalData, input: string): StepResult | null {
+  const choice = input.trim();
+
+  if (choice === '1') {
+    return {
+      nextStep: ConversationStep.HELMET_TYPE,
+      updatedData: { ...data },
+      reply: t(data.language, 'helmet_type_prompt'),
+    };
+  }
+  if (choice === '2') {
+    return afterHelmet(data, data.currentMember ?? {}, data.language);
+  }
+  return null;
+}
+
+function handleHelmetType(data: InternalData, input: string): StepResult | null {
+  const itemMap: Record<string, EquipmentItem> = {
+    '1': 'helmet_visor',
+    '2': 'helmet_no_visor',
+  };
+  const item = itemMap[input.trim()];
+  if (!item) return null;
+
+  const equipment = [...(data.currentMember?.equipment ?? []), item];
+  const member = { ...data.currentMember, equipment };
+  return afterHelmet(data, member, data.language);
+}
+
+function handleMeasurements(data: InternalData, input: string): StepResult | 'invalid' {
+  const m = parseMeasurements(input);
+  if (!m) return 'invalid';
+
+  const member = { ...data.currentMember, ...m };
+  return hotelRouting(data, member, data.language);
+}
+
+function handleHotel(data: InternalData, input: string): StepResult | null {
+  const hotel = input.trim();
+  if (!hotel) return null;
+
+  const member = { ...data.currentMember, hotel };
+  return {
+    nextStep: ConversationStep.ADD_PERSON,
+    updatedData: { ...data, currentMember: member, groupHotel: hotel },
+    reply: t(data.language, 'add_person_prompt'),
+  };
+}
+
+// --- Group management ---
 
 function handleAddPerson(data: InternalData, input: string): StepResult | null {
   const answer = normalizeYesNo(input, data.language);
   if (!answer) return null;
 
-  // Finalize current member
   const currentMember = data.currentMember as GroupMember;
   const members = [...(data.members ?? []), currentMember];
   const nextPersonNumber = members.length + 1;
 
   if (answer === 'yes') {
     return {
-      nextStep: ConversationStep.PERSON_NAME_FIRST,
-      updatedData: { ...data, members, currentMember: undefined },
+      nextStep: ConversationStep.PERSON_NAME,
+      updatedData: { ...data, members, currentMember: undefined, currentBranch: undefined },
       reply:
         t(data.language, 'person_next_intro', { index: nextPersonNumber }) +
         '\n' +
-        t(data.language, 'person_name_first_prompt'),
+        t(data.language, 'person_name_prompt'),
     };
   }
 
-  // 'no' → show full summary and request confirmation
-  const summary = buildSummary({ ...data, members, currentMember: undefined }, data.language);
+  const finalData = { ...data, members, currentMember: undefined, currentBranch: undefined };
+  const summary = buildSummary(finalData, data.language);
   return {
     nextStep: ConversationStep.CONFIRM,
-    updatedData: { ...data, members, currentMember: undefined },
+    updatedData: finalData,
     reply: `${summary}\n\n${t(data.language, 'confirm_prompt')}`,
   };
 }
@@ -627,6 +869,11 @@ async function createEasyrentReservation(
   data: InternalData,
   shopConfig: ShopEasyrentConfig,
 ): Promise<string> {
+  if (process.env.MOCK_EASYRENT === 'true') {
+    console.info('[mock] MOCK_EASYRENT=true — skipping Easyrent API calls');
+    return `MOCK-${Date.now()}`;
+  }
+
   const members = data.members ?? [];
   if (members.length === 0) throw new Error('No members in reservation');
 
@@ -635,32 +882,36 @@ async function createEasyrentReservation(
   // 1. Create / update primary customer
   const primaryResult = await soapCustInsertOrUpdateV2(shopConfig, {
     customer: {
-      firstname: primary.firstname,
-      lastname: primary.lastname,
-      heightcm: primary.heightcm,
-      weightkg: primary.weightkg,
-      solemm: primary.solemm,
-      int_isoskiertypeid: primary.skillLevel ? skillToEasyrentId(primary.skillLevel) : undefined,
-      languagecode: data.language,
+      firstname:            primary.firstname,
+      lastname:             primary.lastname,
+      dateofbirth:          primary.dob ? new Date(primary.dob) : undefined,
+      hotelname:            primary.hotel,
+      heightcm:             primary.heightcm,
+      weightkg:             primary.weightkg,
+      solemm:               primary.solemm,
+      int_isoskiertypeid:   primary.skillLevel ? skillToEasyrentId(primary.skillLevel) : undefined,
+      languagecode:         data.language,
     },
   });
 
   const primaryCode = primaryResult.customerresult.er_custcode;
-  const groupCode = primaryResult.customerresult.er_groupcode;
+  const groupCode   = primaryResult.customerresult.er_groupcode;
 
   // 2. Create additional group members
   const memberCodes: string[] = [primaryCode];
   for (const member of members.slice(1)) {
     const result = await soapCustInsertOrUpdateV2(shopConfig, {
       customer: {
-        firstname: member.firstname,
-        lastname: member.lastname,
-        heightcm: member.heightcm,
-        weightkg: member.weightkg,
-        solemm: member.solemm,
+        firstname:          member.firstname,
+        lastname:           member.lastname,
+        dateofbirth:        member.dob ? new Date(member.dob) : undefined,
+        hotelname:          member.hotel,
+        heightcm:           member.heightcm,
+        weightkg:           member.weightkg,
+        solemm:             member.solemm,
         int_isoskiertypeid: member.skillLevel ? skillToEasyrentId(member.skillLevel) : undefined,
-        er_groupcode: groupCode,
-        languagecode: data.language,
+        er_groupcode:       groupCode,
+        languagecode:       data.language,
       },
     });
     memberCodes.push(result.customerresult.er_custcode);
@@ -677,11 +928,11 @@ async function createEasyrentReservation(
   // TODO: reservationData body must be confirmed against live Easyrent before production.
   const reservationData = {
     customerCode: primaryCode,
-    groupCode: members.length > 1 ? groupCode : undefined,
-    branchId: shopConfig.branchId,
-    dateFrom: data.datefrom,
-    dateTo: data.dateto,
-    positions: (data.rentalGroupIds ?? []).flatMap(rentalGroupId =>
+    groupCode:    members.length > 1 ? groupCode : undefined,
+    branchId:     shopConfig.branchId,
+    dateFrom:     data.datefrom,
+    dateTo:       data.dateto,
+    positions:    (data.rentalGroupIds ?? []).flatMap(rentalGroupId =>
       memberCodes.map(code => ({ rentalGroupId, customerCode: code, quantity: 1 })),
     ),
   };
@@ -806,10 +1057,10 @@ export async function processMessage(
   }
 
   const shopConfig: ShopEasyrentConfig = {
-    soapUrl: shop.easyrent_soap_url,
+    soapUrl:     shop.easyrent_soap_url,
     restBaseUrl: shop.easyrent_rest_base_url,
-    accessId: shop.easyrent_accessid,
-    branchId: shop.easyrent_branchid,
+    accessId:    shop.easyrent_accessid,
+    branchId:    shop.easyrent_branchid,
   };
 
   let conversation: ConversationRow | null;
@@ -833,7 +1084,6 @@ export async function processMessage(
 
   const language: Language = conversation.language ?? 'de';
 
-  // Check expiry — reset if expired
   if (new Date(conversation.expires_at) < new Date()) {
     try {
       await expireConversation(conversation.id);
@@ -867,8 +1117,10 @@ async function routeStep(
   ttl: number,
 ): Promise<string> {
   let result: StepResult | null = null;
+  const kid = isKid(data.currentMember?.dob ?? '1900-01-01');
 
   switch (currentStep) {
+
     case ConversationStep.WELCOME: {
       const r = handleLanguageSelection(input);
       if (!r) return t(language, 'language_invalid');
@@ -879,7 +1131,7 @@ async function routeStep(
     case ConversationStep.DATE_FROM: {
       const r = handleDateFrom(data, input);
       if (r === 'invalid') return t(language, 'date_invalid');
-      if (r === 'past') return t(language, 'date_past');
+      if (r === 'past')    return t(language, 'date_past');
       result = r;
       break;
     }
@@ -887,62 +1139,135 @@ async function routeStep(
     case ConversationStep.DATE_TO: {
       const r = handleDateTo(data, input);
       if (r === 'invalid') return t(language, 'date_invalid');
-      if (r === 'past') return t(language, 'date_past');
-      if (r === 'order') return t(language, 'date_order');
+      if (r === 'past')    return t(language, 'date_past');
+      if (r === 'order')   return t(language, 'date_order');
       result = r;
       break;
     }
 
-    case ConversationStep.PERSON_NAME_FIRST: {
-      result = handlePersonNameFirst(data, input);
-      if (!result) return t(language, 'name_invalid');
+    case ConversationStep.PERSON_NAME: {
+      result = handlePersonName(data, input);
+      if (!result) return t(language, 'person_name_invalid');
       break;
     }
 
-    case ConversationStep.PERSON_NAME_LAST: {
-      result = handlePersonNameLast(data, input);
-      if (!result) return t(language, 'name_invalid');
-      break;
-    }
-
-    case ConversationStep.PERSON_AGE: {
-      result = handlePersonAge(data, input);
-      if (!result) return t(language, 'person_age_invalid');
-      break;
-    }
-
-    case ConversationStep.PERSON_EQUIPMENT: {
-      const r = handlePersonEquipment(data, input);
-      if (r === 'invalid') return t(language, 'person_equipment_invalid');
-      if (r === 'none') return t(language, 'person_equipment_none');
+    case ConversationStep.PERSON_DOB: {
+      const r = handlePersonDob(data, input);
+      if (r === 'invalid') return t(language, 'person_dob_invalid');
+      if (r === 'future')  return t(language, 'person_dob_future');
       result = r;
       break;
     }
 
-    case ConversationStep.PERSON_HEIGHT: {
-      const r = handlePersonHeight(data, input);
-      if (r === 'invalid') return t(language, 'person_height_invalid');
+    case ConversationStep.EQUIPMENT_CATEGORY: {
+      result = handleEquipmentCategory(data, input);
+      if (!result) return t(language, kid ? 'equipment_category_invalid_kid' : 'equipment_category_invalid_adult');
+      break;
+    }
+
+    case ConversationStep.SKI_SKILL: {
+      result = handleSkiSkill(data, input);
+      if (!result) return t(language, 'ski_skill_invalid');
+      break;
+    }
+
+    case ConversationStep.SKI_BOOTS: {
+      result = handleSkiBoots(data, input);
+      if (!result) return t(language, 'ski_boots_invalid');
+      break;
+    }
+
+    case ConversationStep.SKI_BOOTS_TYPE: {
+      result = handleSkiBootsType(data, input);
+      if (!result) return t(language, 'ski_boots_type_invalid');
+      break;
+    }
+
+    case ConversationStep.SKI_SOLE: {
+      const r = handleSkiSole(data, input);
+      if (r === 'invalid') return t(language, 'ski_sole_invalid');
       result = r;
       break;
     }
 
-    case ConversationStep.PERSON_WEIGHT: {
-      const r = handlePersonWeight(data, input);
-      if (r === 'invalid') return t(language, 'person_weight_invalid');
+    case ConversationStep.SKI_NEED: {
+      result = handleSkiNeed(data, input);
+      if (!result) return t(language, 'ski_need_invalid');
+      break;
+    }
+
+    case ConversationStep.SKI_MODEL: {
+      result = handleSkiModel(data, input);
+      if (!result) return t(language, 'ski_model_invalid');
+      break;
+    }
+
+    case ConversationStep.SNOWBOARD_BOOTS: {
+      result = handleSnowboardBoots(data, input);
+      if (!result) return t(language, 'snowboard_boots_invalid');
+      break;
+    }
+
+    case ConversationStep.SNOWBOARD_MODEL: {
+      result = handleSnowboardModel(data, input);
+      if (!result) return t(language, 'snowboard_model_invalid');
+      break;
+    }
+
+    case ConversationStep.OTHER_CATEGORY: {
+      result = handleOtherCategory(data, input);
+      if (!result) return t(language, 'other_category_invalid');
+      break;
+    }
+
+    case ConversationStep.TOURING_ITEMS: {
+      const r = handleTouringItems(data, input);
+      if (r === 'invalid') return t(language, 'touring_items_invalid');
+      if (r === 'none')    return t(language, 'touring_items_none');
       result = r;
       break;
     }
 
-    case ConversationStep.PERSON_SKILL: {
-      result = handlePersonSkill(data, input);
-      if (!result) return t(language, 'person_skill_invalid');
+    case ConversationStep.XC_TYPE: {
+      result = handleXcType(data, input);
+      if (!result) return t(language, 'xc_type_invalid');
       break;
     }
 
-    case ConversationStep.PERSON_SOLE: {
-      const r = handlePersonSole(data, input);
-      if (r === 'invalid') return t(language, 'person_sole_invalid');
+    case ConversationStep.XC_BOOTS: {
+      result = handleXcBoots(data, input);
+      if (!result) return t(language, 'xc_boots_invalid');
+      break;
+    }
+
+    case ConversationStep.MISC_ITEM: {
+      result = handleMiscItem(data, input);
+      if (!result) return t(language, 'misc_item_invalid');
+      break;
+    }
+
+    case ConversationStep.HELMET: {
+      result = handleHelmet(data, input);
+      if (!result) return t(language, 'helmet_invalid');
+      break;
+    }
+
+    case ConversationStep.HELMET_TYPE: {
+      result = handleHelmetType(data, input);
+      if (!result) return t(language, 'helmet_type_invalid');
+      break;
+    }
+
+    case ConversationStep.MEASUREMENTS: {
+      const r = handleMeasurements(data, input);
+      if (r === 'invalid') return t(language, 'measurements_invalid');
       result = r;
+      break;
+    }
+
+    case ConversationStep.HOTEL: {
+      result = handleHotel(data, input);
+      if (!result) return t(language, 'hotel_invalid');
       break;
     }
 
@@ -1008,7 +1333,7 @@ async function routeStep(
 
 /**
  * Mark stale active conversations as expired.
- * Call on a periodic interval (configured via CLEANUP_INTERVAL_MS).
+ * Called on a periodic interval (configured via CLEANUP_INTERVAL_MS).
  */
 export async function runCleanup(): Promise<number> {
   const { rows } = await pool.query<{ count: string }>(

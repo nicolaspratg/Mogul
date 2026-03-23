@@ -11,35 +11,81 @@
 
   "person_first_intro": "Let's start with your details:",
   "person_next_intro": "Person {{index}}:",
-  "person_name_first_prompt": "First name:",
-  "person_name_last_prompt": "Last name:",
-  "person_age_prompt": "Age:",
-  "person_age_invalid": "Please enter a valid age (1–99).",
-  "name_invalid": "Please enter a valid name (at least 1 character).",
+  "person_name_prompt": "First name, Last name (separated by a comma)\n(e.g. John, Smith):",
+  "person_name_invalid": "Please enter your first and last name separated by a comma (e.g. John, Smith).",
 
-  "person_equipment_prompt_header": "What would {{firstname}} like to rent?\nEnter the item numbers, separated by commas (e.g. 1, 6):",
-  "person_equipment_invalid": "Please enter valid numbers from the list, separated by commas.",
-  "person_equipment_none": "Please select at least one item.",
+  "person_dob_prompt": "Date of birth:\nFormat: DD.MM.YYYY (e.g. 15.03.1990)",
+  "person_dob_invalid": "Invalid date. Please use the format DD.MM.YYYY (e.g. 15.03.1990).",
+  "person_dob_future": "Date of birth cannot be today or in the future.",
 
-  "person_height_prompt": "Height in cm (e.g. 175):",
-  "person_height_invalid": "Please enter a height between 80 and 230 cm.",
-  "person_weight_prompt": "Weight in kg (e.g. 75):",
-  "person_weight_invalid": "Please enter a weight between 10 and 200 kg.",
-  "person_skill_prompt": "Ability level:\n1 - Beginner\n2 - Intermediate\n3 - Advanced",
-  "person_skill_invalid": "Please choose 1 (Beginner), 2 (Intermediate), or 3 (Advanced).",
-  "person_sole_prompt": "Ski boot sole length in mm (e.g. 285):\n(Printed on the boot's insole or heel.)",
-  "person_sole_invalid": "Please enter a sole length between 150 and 380 mm.",
+  "equipment_category_prompt_adult": "What would {{firstname}} like to rent?\n1 - Ski\n2 - Snowboard\n3 - Other (Touring, Cross Country, Snowshoes...)",
+  "equipment_category_prompt_kid": "What would {{firstname}} like to rent?\n1 - Ski\n2 - Snowboard",
+  "equipment_category_invalid_adult": "Please choose 1 (Ski), 2 (Snowboard), or 3 (Other).",
+  "equipment_category_invalid_kid": "Please choose 1 (Ski) or 2 (Snowboard).",
+
+  "ski_skill_prompt": "What is {{firstname}}'s ability level?\n1 - Beginner\n2 - Intermediate\n3 - Advanced",
+  "ski_skill_invalid": "Please choose 1 (Beginner), 2 (Intermediate), or 3 (Advanced).",
+
+  "ski_boots_prompt": "Does {{firstname}} have ski boots?\n1 - Yes, I have my own boots\n2 - No, I need to rent boots",
+  "ski_boots_invalid": "Please reply with 1 (have own boots) or 2 (need to rent).",
+
+  "ski_boots_type_prompt": "Which ski boots?\n1 - Premium\n2 - Economy",
+  "ski_boots_type_invalid": "Please choose 1 (Premium) or 2 (Economy).",
+
+  "ski_sole_prompt": "Ski boot sole length in mm (e.g. 285):\n(Printed on the boot's insole or heel.)",
+  "ski_sole_invalid": "Please enter a sole length between 150 and 380 mm.",
+
+  "ski_need_prompt": "Does {{firstname}} need skis?\n1 - Yes\n2 - No, boots only",
+  "ski_need_invalid": "Please reply with 1 (Yes) or 2 (No, boots only).",
+
+  "ski_model_prompt": "Which skis?\n1 - Factory Test\n2 - Diamond\n3 - Premium\n4 - Economy\n5 - Basic",
+  "ski_model_invalid": "Please choose a number from 1 to 5.",
+
+  "snowboard_boots_prompt": "Does {{firstname}} have snowboard boots?\n1 - Yes, I have my own boots\n2 - No, I need to rent boots",
+  "snowboard_boots_invalid": "Please reply with 1 (have own boots) or 2 (need to rent).",
+
+  "snowboard_model_prompt": "Which snowboard?\n1 - Premium\n2 - Economy",
+  "snowboard_model_invalid": "Please choose 1 (Premium) or 2 (Economy).",
+
+  "other_category_prompt": "Which category?\n1 - Touring\n2 - Cross Country\n3 - Miscellaneous (Snowshoes, Sleigh)",
+  "other_category_invalid": "Please choose 1 (Touring), 2 (Cross Country), or 3 (Miscellaneous).",
+
+  "touring_items_prompt": "Which touring equipment? Enter numbers separated by commas:\n1 - Touring Skis\n2 - Touring Boots\n3 - Backpack\n4 - Radar (PEEPS)\n5 - Shovel\n6 - Avalanche Bag\n7 - Probe",
+  "touring_items_invalid": "Please enter valid numbers from 1 to 7, separated by commas.",
+  "touring_items_none": "Please select at least one item.",
+
+  "xc_type_prompt": "Which cross country style?\n1 - Classic\n2 - Skating",
+  "xc_type_invalid": "Please choose 1 (Classic) or 2 (Skating).",
+
+  "xc_boots_prompt": "Does {{firstname}} need cross country boots?\n1 - Yes\n2 - No",
+  "xc_boots_invalid": "Please reply with 1 (Yes) or 2 (No).",
+
+  "misc_item_prompt": "Which item?\n1 - Snowshoes\n2 - Sleigh",
+  "misc_item_invalid": "Please choose 1 (Snowshoes) or 2 (Sleigh).",
+
+  "helmet_prompt": "Would {{firstname}} like to rent a helmet?\n1 - Yes\n2 - No",
+  "helmet_invalid": "Please reply with 1 (Yes) or 2 (No).",
+
+  "helmet_type_prompt": "Which helmet?\n1 - With visor\n2 - Without visor",
+  "helmet_type_invalid": "Please choose 1 (With visor) or 2 (Without visor).",
+
+  "measurements_prompt": "Height and weight, separated by a comma\n(e.g. 184, 78 — height in cm, weight in kg):",
+  "measurements_invalid": "Please enter valid values separated by a comma (height 80–230 cm, weight 10–200 kg).",
+
+  "hotel_prompt": "Which hotel is {{firstname}} staying at?\n(Type the hotel name, or \"none\" if not applicable.)",
+  "hotel_invalid": "Please enter a hotel name.",
 
   "add_person_prompt": "Would you like to add another person to this reservation?\n1 - Yes\n2 - No, complete booking",
   "add_person_invalid": "Please reply with 1 (Yes) or 2 (No).",
 
   "summary_header": "Summary of your booking request:",
   "summary_dates": "Period: {{datefrom}} to {{dateto}}",
-  "summary_person_header": "Person {{index}}: {{firstname}} {{lastname}} ({{age}} yrs)",
+  "summary_person_header": "Person {{index}}: {{firstname}} {{lastname}} ({{dob}})",
   "summary_person_equipment": "Equipment: {{equipment}}",
   "summary_person_measurements": "Height: {{height}} cm | Weight: {{weight}} kg",
   "summary_person_skill": "Ability: {{skill}}",
   "summary_person_sole": "Boot sole: {{sole}} mm",
+  "summary_person_hotel": "Hotel: {{hotel}}",
 
   "confirm_prompt": "Please confirm your booking by replying YES or cancel with NO.",
   "confirm_invalid": "Please reply with YES or NO.",
@@ -54,14 +100,6 @@
   "skill_beginner": "Beginner",
   "skill_intermediate": "Intermediate",
   "skill_advanced": "Advanced",
-
-  "equipment_section_alpine": "ALPINE SKIS",
-  "equipment_section_ski_boots": "SKI BOOTS",
-  "equipment_section_snowboard": "SNOWBOARD",
-  "equipment_section_xc": "CROSS COUNTRY",
-  "equipment_section_touring": "TOURING",
-  "equipment_section_other": "OTHER",
-  "equipment_section_kids": "KIDS",
 
   "equipment_item_ski_factory_test": "Ski Factory Test",
   "equipment_item_ski_diamond": "Ski Diamond",
