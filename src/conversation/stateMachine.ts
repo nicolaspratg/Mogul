@@ -1236,6 +1236,9 @@ export async function processMessage(
       console.error('[stateMachine] DB error creating conversation:', err);
       return t('en', 'error_generic');
     }
+    // Fresh conversation — return the welcome prompt immediately without
+    // processing the triggering input (which may be a reset keyword or '1').
+    return t('de', 'welcome', { shopName: shop.name });
   }
 
   const language: Language = conversation.language ?? 'de';
