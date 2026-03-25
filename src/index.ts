@@ -8,6 +8,7 @@
 import express from 'express';
 import { config } from './config';
 import { whatsappRouter } from './webhook/whatsapp';
+import { twilioRouter } from './webhook/twilio';       // DISPOSABLE — remove when Meta is live
 import { runCleanup } from './conversation/stateMachine';
 
 const app = express();
@@ -30,6 +31,12 @@ app.get('/health', (_req, res) => {
 });
 
 app.use('/webhook', whatsappRouter);
+
+// DISPOSABLE — Twilio sandbox adapter. Remove once Meta app is approved.
+if (config.twilioAccountSid && config.twilioAuthToken && config.twilioWhatsappFrom) {
+  app.use('/webhook-twilio', express.urlencoded({ extended: false }), twilioRouter);
+  console.info('[server] Twilio sandbox adapter enabled at /webhook-twilio');
+}
 
 // ---------------------------------------------------------------------------
 // Cleanup job

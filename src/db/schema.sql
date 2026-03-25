@@ -94,6 +94,23 @@ CREATE INDEX IF NOT EXISTS idx_reservations_easyrent_code
   WHERE easyrent_reservation_code IS NOT NULL;
 
 -- ---------------------------------------------------------------------------
+-- processed_messages
+-- Tracks WhatsApp message IDs that have already been processed.
+-- Prevents duplicate processing when Meta retries webhook delivery.
+-- Rows older than 48 h can be pruned by the cleanup job.
+-- ---------------------------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS processed_messages (
+  message_id  TEXT        PRIMARY KEY,
+  shop_id     UUID        NOT NULL REFERENCES shops(id) ON DELETE CASCADE,
+  received_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- Used by the cleanup job to prune old dedup records.
+CREATE INDEX IF NOT EXISTS idx_processed_messages_received_at
+  ON processed_messages (received_at);
+
+-- ---------------------------------------------------------------------------
 -- message_queue
 -- Durable queue for Easyrent API calls.
 -- Processed by the app-level queue runner with retry (3 attempts,

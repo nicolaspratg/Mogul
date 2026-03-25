@@ -44,6 +44,20 @@ export interface AppConfig {
   readonly conversationTtlHours: number;
   /** How often the in-process cleanup job fires, in milliseconds (default: 15 min). */
   readonly cleanupIntervalMs: number;
+  /**
+   * 360dialog sandbox API key (D360-API-KEY).
+   * DISPOSABLE — only needed while Meta developer access is pending.
+   * Set DIALOG360_API_KEY in .env to enable the /webhook-360 route.
+   */
+  readonly dialog360ApiKey: string | undefined;
+  /**
+   * Twilio sandbox credentials.
+   * DISPOSABLE — only needed while Meta developer access is pending.
+   * Set all three to enable the /webhook-twilio route.
+   */
+  readonly twilioAccountSid: string | undefined;
+  readonly twilioAuthToken: string | undefined;
+  readonly twilioWhatsappFrom: string | undefined; // e.g. "whatsapp:+14155238886"
 }
 
 function buildConfig(): AppConfig {
@@ -66,6 +80,10 @@ function buildConfig(): AppConfig {
     nodeEnv: nodeEnvRaw,
     conversationTtlHours: optionalEnvInt('CONVERSATION_TTL_HOURS', 24),
     cleanupIntervalMs: optionalEnvInt('CLEANUP_INTERVAL_MS', 15 * 60 * 1000),
+    dialog360ApiKey: process.env['DIALOG360_API_KEY'] || undefined,
+    twilioAccountSid: process.env['TWILIO_ACCOUNT_SID'] || undefined,
+    twilioAuthToken: process.env['TWILIO_AUTH_TOKEN'] || undefined,
+    twilioWhatsappFrom: process.env['TWILIO_WHATSAPP_FROM'] || undefined,
   };
 }
 
