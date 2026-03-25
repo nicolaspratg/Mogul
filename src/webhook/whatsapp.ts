@@ -19,6 +19,7 @@
 import { createHmac, timingSafeEqual } from 'crypto';
 import { Router, type Request, type Response } from 'express';
 import { config } from '../config';
+import { pool } from '../db/pool';
 import { processMessage } from '../conversation/stateMachine';
 
 export const whatsappRouter = Router();
@@ -103,16 +104,75 @@ interface MetaWebhookPayload {
 }
 
 // ---------------------------------------------------------------------------
+// Reset command
+// ---------------------------------------------------------------------------
+
+const RESET_KEYWORDS = new Set(['reset', 'neustart', 'ricominciare']);
+
+function isResetCommand(text: string): boolean {
+  return RESET_KEYWORDS.has(text.trim().toLowerCase());
+}
+
+async function resetConversation(shopId: string, waPhone: string): Promise<void> {
+  await pool.query(
+    `UPDATE conversations
+     SET status = 'expired', updated_at = NOW()
+     WHERE wa_phone = $1 AND shop_id = $2 AND status = 'active'`,
+    [waPhone, shopId],
+  );
+  console.info(`[webhook] Conversation reset for ${waPhone} in shop ${shopId}`);
+}
+
+// ---------------------------------------------------------------------------
+// Message deduplication
+// ---------------------------------------------------------------------------
+
+async function isAlreadyProcessed(messageId: string): Promise<boolean> {
+  const { rows } = await pool.query<{ message_id: string }>(
+    `SELECT message_id FROM processed_messages WHERE message_id = $1`,
+    [messageId],
+  );
+  return rows.length > 0;
+}
+
+async function markProcessed(messageId: string, shopId: string): Promise<void> {
+  await pool.query(
+    `INSERT INTO processed_messages (message_id, shop_id)
+     VALUES ($1, $2)
+     ON CONFLICT (message_id) DO NOTHING`,
+    [messageId, shopId],
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Send a WhatsApp message via Meta Cloud API
 // ---------------------------------------------------------------------------
 
+const MAX_WA_MESSAGE_LENGTH = 4096;
+
 /**
- * Send a text message back to a WhatsApp user.
- *
- * @param phoneNumberId  Meta phone number ID of the receiving shop (from shops.whatsapp_phone_number_id)
- * @param token          Meta Cloud API access token for this shop
- * @param to             Recipient phone number (E.164)
- * @param text           Message body
+ * Split a long text at the last newline before the 4096-char limit.
+ */
+function splitMessage(text: string): string[] {
+  if (text.length <= MAX_WA_MESSAGE_LENGTH) return [text];
+
+  const parts: string[] = [];
+  let remaining = text;
+
+  while (remaining.length > MAX_WA_MESSAGE_LENGTH) {
+    const chunk = remaining.slice(0, MAX_WA_MESSAGE_LENGTH);
+    const lastNewline = chunk.lastIndexOf('\n');
+    const cutAt = lastNewline > 0 ? lastNewline : MAX_WA_MESSAGE_LENGTH;
+    parts.push(remaining.slice(0, cutAt).trimEnd());
+    remaining = remaining.slice(cutAt).trimStart();
+  }
+
+  if (remaining) parts.push(remaining);
+  return parts;
+}
+
+/**
+ * Send a single raw text message via Meta Cloud API.
  */
 async function sendWhatsAppMessage(
   phoneNumberId: string,
@@ -129,10 +189,9 @@ async function sendWhatsAppMessage(
     text: { body: text },
   };
 
-  let response: Response;
+  let response: globalThis.Response;
   try {
-    // Using global fetch (Node 18+)
-    response = await (fetch as typeof globalThis.fetch)(url, {
+    response = await fetch(url, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -141,24 +200,34 @@ async function sendWhatsAppMessage(
       body: JSON.stringify(body),
     });
   } catch (err) {
-    console.error('[webhook] Network error sending WhatsApp message:', err);
+    console.error('[whatsapp] Network error sending message:', err);
     return;
   }
 
   if (!response.ok) {
     const errBody = await response.text().catch(() => '');
-    console.error(
-      `[webhook] Meta API error ${response.status} sending to ${to}:`,
-      errBody,
-    );
+    console.error(`[whatsapp] Meta API error ${response.status} sending to ${to}:`, errBody);
+  }
+}
+
+/**
+ * Send a reply, splitting into multiple messages if it exceeds 4096 chars.
+ */
+async function sendReply(
+  phoneNumberId: string,
+  token: string,
+  to: string,
+  text: string,
+): Promise<void> {
+  const parts = splitMessage(text);
+  for (const part of parts) {
+    await sendWhatsAppMessage(phoneNumberId, token, to, part);
   }
 }
 
 // ---------------------------------------------------------------------------
 // Fetch shop WhatsApp credentials from DB (phone_number_id + token)
 // ---------------------------------------------------------------------------
-
-import { pool } from '../db/pool';
 
 interface ShopWhatsappCreds {
   whatsapp_phone_number_id: string;
@@ -239,22 +308,54 @@ whatsappRouter.post('/:shopId', async (req: Request, res: Response) => {
 
         const waPhone = message.from;
         const incomingText = message.text.body;
+        const messageId = message.id;
 
         console.info(
           `[webhook] Message from ${waPhone} → shop ${shopId}: "${incomingText}"`,
         );
 
-        // 6. Run the state machine
-        let reply: string;
+        // 6. Deduplicate — Meta can deliver the same message more than once
+        let alreadySeen: boolean;
         try {
-          reply = await processMessage(shopId, waPhone, incomingText);
+          alreadySeen = await isAlreadyProcessed(messageId);
         } catch (err) {
-          console.error('[webhook] Unhandled state machine error:', err);
-          reply = 'An unexpected error occurred. Please try again.';
+          console.error('[db] Error checking dedup for message:', messageId, err);
+          alreadySeen = false; // process anyway if DB check fails
         }
 
-        // 7. Send reply
-        await sendWhatsAppMessage(
+        if (alreadySeen) {
+          console.info(`[webhook] Duplicate message ${messageId} — skipping`);
+          continue;
+        }
+
+        try {
+          await markProcessed(messageId, shopId);
+        } catch (err) {
+          // Non-fatal: log and continue; worst case we process a duplicate
+          console.warn('[db] Failed to mark message as processed:', messageId, err);
+        }
+
+        // 7. Handle reset command
+        if (isResetCommand(incomingText)) {
+          try {
+            await resetConversation(shopId, waPhone);
+          } catch (err) {
+            console.error('[db] Error resetting conversation:', err);
+          }
+          // Fall through — processMessage will restart from step 1
+        }
+
+        // 8. Run the state machine
+        let reply: string;
+        try {
+          reply = await processMessage(shopId, waPhone, isResetCommand(incomingText) ? '1' : incomingText);
+        } catch (err) {
+          console.error('[webhook] Unhandled state machine error:', err);
+          reply = 'Sorry, something went wrong. Please try again.';
+        }
+
+        // 9. Send reply (splits automatically if >4096 chars)
+        await sendReply(
           shopCreds.whatsapp_phone_number_id,
           shopCreds.whatsapp_token,
           waPhone,
