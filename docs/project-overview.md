@@ -227,8 +227,30 @@ Translation helper `t(language, key, params?)` supports `de`, `en`, `it`. String
 
 ---
 
+## Pilot Shop — Riml Sports
+
+First tenant. Easyrent runs on a **local Wintersteiger desktop app** (Tomcat 8.5) on their own Windows server, exposed publicly via their router.
+
+| Field | Value |
+|---|---|
+| `easyrent_host` | `83.218.162.16` |
+| `easyrent_soap_url` | `http://83.218.162.16:11122/wsa/wsa1/wsdl?targetURI=urn:wseasyrent` |
+| `easyrent_rest_base_url` | `http://83.218.162.16:11122/easyrest/rest` |
+| `easyrent_accessid` (SOAP) | `bG2wLPacN#` |
+| `easyrent_accessid` (REST) | `bRimlOber` |
+| `easyrent_branchid` | **TODO** — fetch via `GET /branches` once API is reachable |
+| WhatsApp credentials | **TODO** |
+
+Seed file: `src/db/seed-riml-sports.sql`
+
+**Blocker:** The easyrest and wseasyrent services need to be deployed via the Wintersteiger app (Deploy buttons in the wseasyrent and easyrest tabs). The appserver is running and autostart is active — IT just needs to deploy once. Port 11122 also needs to be open on their router for external access.
+
+---
+
 ## What is NOT done yet
 
+- **Riml Sports API not yet reachable** — easyrest/wseasyrent not deployed on their server yet
+- **`easyrent_branchid` for Riml Sports** — get via `GET /branches` once API is reachable
 - **Italian (`it`) translations** — only DE and EN exist
 - **Live Easyrent REST reservation body** — structure needs validation against a real instance
 - **Basket flow** — may be required by Easyrent before creating a reservation
