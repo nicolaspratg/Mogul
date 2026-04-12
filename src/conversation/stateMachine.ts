@@ -30,6 +30,7 @@
 import { pool } from '../db/pool';
 import { config } from '../config';
 import { t } from '../i18n';
+import { type BotReply, type ButtonReply, type ListReply, type ListItem } from '../types/bot';
 import {
   EasyrentError,
   type Language,
@@ -215,7 +216,7 @@ interface InternalData extends ConversationData {
 interface StepResult {
   nextStep: ConversationStep;
   updatedData: InternalData;
-  reply: string;
+  reply: BotReply;
 }
 
 // ---------------------------------------------------------------------------
@@ -314,12 +315,12 @@ function parsePositiveFloat(input: string): number | null {
 function normalizeYesNo(input: string, language: Language): 'yes' | 'no' | null {
   const lower = input.trim().toLowerCase();
   const yesTokens: Record<Language, string[]> = {
-    de: ['ja', 'j', 'yes', 'y', 'ok', '1'],
-    en: ['yes', 'y', 'ja', 'ok', '1'],
-    it: ['si', 'sì', 's', 'yes', 'y', 'ok', '1'],
+    de: ['ja', 'j', 'yes', 'y', 'ok', '1', 'bestätigen', 'confirm'],
+    en: ['yes', 'y', 'ja', 'ok', '1', 'confirm'],
+    it: ['si', 'sì', 's', 'yes', 'y', 'ok', '1', 'confirm'],
   };
   const noTokens: Record<Language, string[]> = {
-    de: ['nein', 'n', 'no', 'abbrechen', '2'],
+    de: ['nein', 'n', 'no', 'abbrechen', '2', 'cancel'],
     en: ['no', 'n', 'nein', 'cancel', '2'],
     it: ['no', 'n', 'cancel', '2'],
   };
@@ -362,7 +363,7 @@ function hotelRouting(data: InternalData, member: Partial<GroupMember>, language
     return {
       nextStep: ConversationStep.ADD_PERSON,
       updatedData: { ...data, currentMember: memberWithHotel },
-      reply: t(language, 'add_person_prompt'),
+      reply: { body: t(language, 'add_person_q'), buttons: [t(language, 'btn_yes'), t(language, 'btn_no')] } satisfies ButtonReply,
     };
   }
   return {
@@ -474,14 +475,14 @@ function buildSummary(data: InternalData, language: Language): string {
 // ---------------------------------------------------------------------------
 
 function handleLanguageSelection(input: string): StepResult | null {
-  const choice = input.trim();
+  const choice = input.trim().toLowerCase();
   let language: Language;
 
-  if (choice === '1' || choice.toLowerCase() === 'de' || choice.toLowerCase() === 'deutsch') {
+  if (['1', 'de', 'deutsch'].includes(choice)) {
     language = 'de';
-  } else if (choice === '2' || choice.toLowerCase() === 'en' || choice.toLowerCase() === 'english') {
+  } else if (['2', 'en', 'english'].includes(choice)) {
     language = 'en';
-  } else if (choice === '3' || choice.toLowerCase() === 'it' || choice.toLowerCase() === 'italiano') {
+  } else if (['3', 'it', 'italiano'].includes(choice)) {
     return {
       nextStep: ConversationStep.WELCOME,
       updatedData: { language: 'en' },
@@ -519,15 +520,19 @@ function handleDateTo(data: InternalData, input: string): StepResult | 'invalid'
   if (new Date(iso) < today) return 'past';
   if (data.datefrom && new Date(iso) <= new Date(data.datefrom)) return 'order';
   return {
-    nextStep: ConversationStep.BRANCH,
+    nextStep: ConversationStep.PERSON_NAME,
     updatedData: { ...data, dateto: iso, members: [] },
-    reply: t(data.language, 'branch_prompt'),
+    reply: t(data.language, 'person_first_intro') + '\n' + t(data.language, 'person_name_prompt'),
   };
 }
 
 function handleBranch(data: InternalData, input: string): StepResult | null {
-  const choice = parseInt(input.trim(), 10);
-  const branch = EXAMPLE_BRANCHES[choice - 1];
+  const trimmed = input.trim();
+  const byNumber = EXAMPLE_BRANCHES[parseInt(trimmed, 10) - 1];
+  const byName = byNumber
+    ? undefined
+    : EXAMPLE_BRANCHES.find(b => b.name.toLowerCase() === trimmed.toLowerCase());
+  const branch = byNumber ?? byName;
   if (!branch) return null;
   return {
     nextStep: ConversationStep.PERSON_NAME,
@@ -557,13 +562,14 @@ function handleSpecialRequests(data: InternalData, input: string): StepResult {
   const specialRequests = skip ? undefined : text;
   const days = calcRentalDays(data.datefrom, data.dateto);
   const totalInsurance = calcInsurancePrice(data.members ?? [], data.datefrom, data.dateto);
+  const lang = data.language;
   return {
     nextStep: ConversationStep.INSURANCE,
     updatedData: { ...data, specialRequests },
-    reply: t(data.language, 'insurance_prompt', {
-      days: String(days),
-      price: totalInsurance.toFixed(2),
-    }),
+    reply: {
+      body: t(lang, 'insurance_q', { days: String(days), price: totalInsurance.toFixed(2) }),
+      buttons: [t(lang, 'btn_yes'), t(lang, 'btn_no')],
+    } satisfies ButtonReply,
   };
 }
 
@@ -572,11 +578,15 @@ function handleInsurance(data: InternalData, input: string): StepResult | null {
   if (!answer) return null;
   const insurance = answer === 'yes';
   const finalData = { ...data, insurance };
-  const summary = buildSummary(finalData, data.language);
+  const lang = data.language;
+  const summary = buildSummary(finalData, lang);
   return {
     nextStep: ConversationStep.CONFIRM,
     updatedData: finalData,
-    reply: `${summary}\n\n${t(data.language, 'confirm_prompt')}`,
+    reply: {
+      body: `${summary}\n\n${t(lang, 'confirm_prompt')}`,
+      buttons: [t(lang, 'btn_confirm'), t(lang, 'btn_cancel')],
+    } satisfies ButtonReply,
   };
 }
 
@@ -597,52 +607,82 @@ function handlePersonDob(data: InternalData, input: string): StepResult | 'inval
 
   const member = { ...data.currentMember, dob: result };
   const kid = isKid(result);
+  const equipButtons: string[] = kid
+    ? [t(data.language, 'btn_ski'), t(data.language, 'btn_snowboard')]
+    : [t(data.language, 'btn_ski'), t(data.language, 'btn_snowboard'), t(data.language, 'btn_other')];
   return {
     nextStep: ConversationStep.EQUIPMENT_CATEGORY,
     updatedData: { ...data, currentMember: member },
-    reply: t(data.language, kid ? 'equipment_category_prompt_kid' : 'equipment_category_prompt_adult', {
-      firstname: member.firstname ?? '',
-    }),
+    reply: {
+      body: t(data.language, kid ? 'equipment_category_q_kid' : 'equipment_category_q_adult', {
+        firstname: member.firstname ?? '',
+      }),
+      buttons: equipButtons,
+    } satisfies ButtonReply,
   };
 }
 
 function handleEquipmentCategory(data: InternalData, input: string): StepResult | null {
-  const choice = input.trim();
+  const lower = input.trim().toLowerCase();
   const kid = isKid(data.currentMember?.dob ?? '1900-01-01');
   const firstname = data.currentMember?.firstname ?? '';
+  const lang = data.language;
 
-  if (choice === '1') {
-    if (kid) {
-      return {
-        nextStep: ConversationStep.SKI_BOOTS,
-        updatedData: { ...data, currentBranch: 'ski' },
-        reply: t(data.language, 'ski_boots_prompt', { firstname }),
-      };
-    }
+  const isSki = lower === '1' || lower === 'ski';
+  const isSnowboard = lower === '2' || lower === 'snowboard';
+  const isOther = !kid && (lower === '3' || lower === 'other' || lower === 'sonstiges' || lower === 'andere');
+
+  if (isSki) {
     return {
       nextStep: ConversationStep.SKI_SKILL,
       updatedData: { ...data, currentBranch: 'ski' },
-      reply: t(data.language, 'ski_skill_prompt', { firstname }),
+      reply: {
+        body: t(lang, 'ski_skill_q', { firstname }),
+        buttons: [t(lang, 'skill_beginner'), t(lang, 'skill_intermediate'), t(lang, 'skill_advanced')],
+      } satisfies ButtonReply,
     };
   }
 
-  if (choice === '2') {
+  if (isSnowboard) {
     return {
-      nextStep: ConversationStep.SNOWBOARD_BOOTS,
+      nextStep: ConversationStep.SNOWBOARD_MODEL,
       updatedData: { ...data, currentBranch: 'snowboard' },
-      reply: t(data.language, 'snowboard_boots_prompt', { firstname }),
+      reply: { body: t(lang, 'snowboard_model_q'), buttons: [t(lang, 'btn_premium'), t(lang, 'btn_economy')] } satisfies ButtonReply,
     };
   }
 
-  if (choice === '3' && !kid) {
+  if (isOther) {
     return {
       nextStep: ConversationStep.OTHER_CATEGORY,
       updatedData: { ...data },
-      reply: t(data.language, 'other_category_prompt'),
+      reply: {
+        body: t(lang, 'other_category_q'),
+        buttons: [t(lang, 'btn_touring'), t(lang, 'btn_xc'), t(lang, 'btn_misc')],
+      } satisfies ButtonReply,
     };
   }
 
   return null;
+}
+
+// ---------------------------------------------------------------------------
+// Interactive reply helpers
+// ---------------------------------------------------------------------------
+
+const SKI_MODELS: Array<{ id: string; item: EquipmentItem; labelKey: string }> = [
+  { id: '1', item: 'ski_factory_test', labelKey: 'equipment_item_ski_factory_test' },
+  { id: '2', item: 'ski_diamant',      labelKey: 'equipment_item_ski_diamant' },
+  { id: '3', item: 'ski_premium',      labelKey: 'equipment_item_ski_premium' },
+  { id: '4', item: 'ski_economy',      labelKey: 'equipment_item_ski_economy' },
+  { id: '5', item: 'ski_basic',        labelKey: 'equipment_item_ski_basic' },
+];
+
+function skiModelListReply(language: Language, firstname: string): ListReply {
+  return {
+    body: t(language, 'ski_model_q', { firstname }),
+    buttonLabel: t(language, 'btn_select'),
+    items: SKI_MODELS.map(m => ({ id: m.id, title: t(language, m.labelKey) } satisfies ListItem)),
+  };
 }
 
 // --- Ski branch ---
@@ -650,60 +690,60 @@ function handleEquipmentCategory(data: InternalData, input: string): StepResult 
 function handleSkiSkill(data: InternalData, input: string): StepResult | null {
   const skill = skillFromInput(input);
   if (!skill) return null;
+  const lang = data.language;
+  const firstname = data.currentMember?.firstname ?? '';
   return {
-    nextStep: ConversationStep.SKI_BOOTS,
+    nextStep: ConversationStep.SKI_NEED,
     updatedData: { ...data, currentMember: { ...data.currentMember, skillLevel: skill } },
-    reply: t(data.language, 'ski_boots_prompt', { firstname: data.currentMember?.firstname ?? '' }),
+    reply: { body: t(lang, 'ski_need_q', { firstname }), buttons: [t(lang, 'btn_yes'), t(lang, 'btn_no')] } satisfies ButtonReply,
   };
 }
 
 function handleSkiBoots(data: InternalData, input: string): StepResult | null {
-  const choice = input.trim();
+  const answer = normalizeYesNo(input, data.language);
+  if (!answer) return null;
   const kid = isKid(data.currentMember?.dob ?? '1900-01-01');
   const firstname = data.currentMember?.firstname ?? '';
+  const lang = data.language;
 
-  if (choice === '1') {
-    // Has own boots → ask sole length
-    return {
-      nextStep: ConversationStep.SKI_SOLE,
-      updatedData: { ...data },
-      reply: t(data.language, 'ski_sole_prompt'),
-    };
+  const helmetReply: ButtonReply = { body: t(lang, 'helmet_q', { firstname }), buttons: [t(lang, 'btn_yes'), t(lang, 'btn_no')] };
+
+  if (answer === 'yes') {
+    // Has own boots — skis already selected, move to helmet
+    return { nextStep: ConversationStep.HELMET, updatedData: { ...data }, reply: helmetReply };
   }
 
-  if (choice === '2') {
-    if (kid) {
-      // Kids: auto-add kids_boots, skip type selection
-      const equipment = [...(data.currentMember?.equipment ?? []), 'kids_boots' as EquipmentItem];
-      return {
-        nextStep: ConversationStep.SKI_NEED,
-        updatedData: { ...data, currentMember: { ...data.currentMember, equipment } },
-        reply: t(data.language, 'ski_need_prompt', { firstname }),
-      };
-    }
+  // Needs to rent boots
+  if (kid) {
+    const equipment = [...(data.currentMember?.equipment ?? []), 'kids_boots' as EquipmentItem];
     return {
-      nextStep: ConversationStep.SKI_BOOTS_TYPE,
-      updatedData: { ...data },
-      reply: t(data.language, 'ski_boots_type_prompt'),
+      nextStep: ConversationStep.HELMET,
+      updatedData: { ...data, currentMember: { ...data.currentMember, equipment } },
+      reply: helmetReply,
     };
   }
-
-  return null;
+  return {
+    nextStep: ConversationStep.SKI_BOOTS_TYPE,
+    updatedData: { ...data },
+    reply: { body: t(lang, 'ski_boots_type_q'), buttons: [t(lang, 'btn_premium'), t(lang, 'btn_economy')] } satisfies ButtonReply,
+  };
 }
 
 function handleSkiBootsType(data: InternalData, input: string): StepResult | null {
   const itemMap: Record<string, EquipmentItem> = {
-    '1': 'ski_boots_premium',
-    '2': 'ski_boots_economy',
+    '1': 'ski_boots_premium', 'premium': 'ski_boots_premium',
+    '2': 'ski_boots_economy', 'economy': 'ski_boots_economy',
   };
-  const item = itemMap[input.trim()];
+  const item = itemMap[input.trim().toLowerCase()];
   if (!item) return null;
 
+  const lang = data.language;
+  const firstname = data.currentMember?.firstname ?? '';
   const equipment = [...(data.currentMember?.equipment ?? []), item];
   return {
-    nextStep: ConversationStep.SKI_NEED,
+    nextStep: ConversationStep.HELMET,
     updatedData: { ...data, currentMember: { ...data.currentMember, equipment } },
-    reply: t(data.language, 'ski_need_prompt', { firstname: data.currentMember?.firstname ?? '' }),
+    reply: { body: t(lang, 'helmet_q', { firstname }), buttons: [t(lang, 'btn_yes'), t(lang, 'btn_no')] } satisfies ButtonReply,
   };
 }
 
@@ -712,139 +752,142 @@ function handleSkiSole(data: InternalData, input: string): StepResult | 'invalid
   if (!n || n < 150 || n > 380) return 'invalid';
   const member = { ...data.currentMember, solemm: Math.round(n) };
   const kid = isKid(member.dob ?? '1900-01-01');
+  const lang = data.language;
   if (kid) {
     const equipment = [...(member.equipment ?? []), 'kids_ski' as EquipmentItem];
     return {
       nextStep: ConversationStep.HELMET,
       updatedData: { ...data, currentMember: { ...member, equipment } },
-      reply: t(data.language, 'helmet_prompt', { firstname: member.firstname ?? '' }),
+      reply: { body: t(lang, 'helmet_q', { firstname: member.firstname ?? '' }), buttons: [t(lang, 'btn_yes'), t(lang, 'btn_no')] } satisfies ButtonReply,
     };
   }
   return {
     nextStep: ConversationStep.SKI_MODEL,
     updatedData: { ...data, currentMember: member },
-    reply: t(data.language, 'ski_model_prompt'),
+    reply: skiModelListReply(lang, member.firstname ?? ''),
   };
 }
 
 function handleSkiNeed(data: InternalData, input: string): StepResult | null {
-  const choice = input.trim();
+  const answer = normalizeYesNo(input, data.language);
+  if (!answer) return null;
   const kid = isKid(data.currentMember?.dob ?? '1900-01-01');
   const firstname = data.currentMember?.firstname ?? '';
+  const lang = data.language;
+  const bootsReply: ButtonReply = { body: t(lang, 'ski_boots_q', { firstname }), buttons: [t(lang, 'btn_yes'), t(lang, 'btn_no')] };
 
-  if (choice === '1') {
+  if (answer === 'yes') {
     if (kid) {
       const equipment = [...(data.currentMember?.equipment ?? []), 'kids_ski' as EquipmentItem];
-      const member = { ...data.currentMember, equipment };
       return {
-        nextStep: ConversationStep.HELMET,
-        updatedData: { ...data, currentMember: member },
-        reply: t(data.language, 'helmet_prompt', { firstname }),
+        nextStep: ConversationStep.SKI_BOOTS,
+        updatedData: { ...data, currentMember: { ...data.currentMember, equipment } },
+        reply: bootsReply,
       };
     }
     return {
       nextStep: ConversationStep.SKI_MODEL,
       updatedData: { ...data },
-      reply: t(data.language, 'ski_model_prompt'),
+      reply: skiModelListReply(lang, firstname),
     };
   }
 
-  if (choice === '2') {
-    // Boots only — go to helmet
-    return {
-      nextStep: ConversationStep.HELMET,
-      updatedData: { ...data },
-      reply: t(data.language, 'helmet_prompt', { firstname }),
-    };
-  }
-
-  return null;
+  // No skis — ask about boots anyway
+  return {
+    nextStep: ConversationStep.SKI_BOOTS,
+    updatedData: { ...data },
+    reply: bootsReply,
+  };
 }
 
 function handleSkiModel(data: InternalData, input: string): StepResult | null {
-  const itemMap: Record<string, EquipmentItem> = {
-    '1': 'ski_factory_test',
-    '2': 'ski_diamant',
-    '3': 'ski_premium',
-    '4': 'ski_economy',
-    '5': 'ski_basic',
-  };
-  const item = itemMap[input.trim()];
-  if (!item) return null;
+  const lower = input.trim().toLowerCase();
+  // Accept numeric (from text fallback) or label (from list picker)
+  const byId = SKI_MODELS.find(m => m.id === lower);
+  const byLabel = byId ? undefined : SKI_MODELS.find(m =>
+    t(data.language, m.labelKey).toLowerCase() === lower ||
+    t('en', m.labelKey).toLowerCase() === lower,
+  );
+  const model = byId ?? byLabel;
+  if (!model) return null;
 
-  const equipment = [...(data.currentMember?.equipment ?? []), item];
+  const lang = data.language;
+  const equipment = [...(data.currentMember?.equipment ?? []), model.item];
   const member = { ...data.currentMember, equipment };
   return {
-    nextStep: ConversationStep.HELMET,
+    nextStep: ConversationStep.SKI_BOOTS,
     updatedData: { ...data, currentMember: member },
-    reply: t(data.language, 'helmet_prompt', { firstname: member.firstname ?? '' }),
+    reply: { body: t(lang, 'ski_boots_q', { firstname: member.firstname ?? '' }), buttons: [t(lang, 'btn_yes'), t(lang, 'btn_no')] } satisfies ButtonReply,
   };
 }
 
 // --- Snowboard branch ---
 
 function handleSnowboardBoots(data: InternalData, input: string): StepResult | null {
-  const choice = input.trim();
+  const answer = normalizeYesNo(input, data.language);
+  if (!answer) return null;
+  const lang = data.language;
+  const firstname = data.currentMember?.firstname ?? '';
+  const helmetReply: ButtonReply = { body: t(lang, 'helmet_q', { firstname }), buttons: [t(lang, 'btn_yes'), t(lang, 'btn_no')] };
 
-  if (choice === '1') {
-    return {
-      nextStep: ConversationStep.SNOWBOARD_MODEL,
-      updatedData: { ...data },
-      reply: t(data.language, 'snowboard_model_prompt'),
-    };
+  if (answer === 'yes') {
+    return { nextStep: ConversationStep.HELMET, updatedData: { ...data }, reply: helmetReply };
   }
-  if (choice === '2') {
-    const equipment = [...(data.currentMember?.equipment ?? []), 'snowboard_boots' as EquipmentItem];
-    return {
-      nextStep: ConversationStep.SNOWBOARD_MODEL,
-      updatedData: { ...data, currentMember: { ...data.currentMember, equipment } },
-      reply: t(data.language, 'snowboard_model_prompt'),
-    };
-  }
-  return null;
+  const equipment = [...(data.currentMember?.equipment ?? []), 'snowboard_boots' as EquipmentItem];
+  return {
+    nextStep: ConversationStep.HELMET,
+    updatedData: { ...data, currentMember: { ...data.currentMember, equipment } },
+    reply: helmetReply,
+  };
 }
 
 function handleSnowboardModel(data: InternalData, input: string): StepResult | null {
   const itemMap: Record<string, EquipmentItem> = {
-    '1': 'snowboard_premium',
-    '2': 'snowboard_economy',
+    '1': 'snowboard_premium', 'premium': 'snowboard_premium',
+    '2': 'snowboard_economy', 'economy': 'snowboard_economy',
   };
-  const item = itemMap[input.trim()];
+  const item = itemMap[input.trim().toLowerCase()];
   if (!item) return null;
 
+  const lang = data.language;
   const equipment = [...(data.currentMember?.equipment ?? []), item];
   const member = { ...data.currentMember, equipment };
   return {
-    nextStep: ConversationStep.HELMET,
+    nextStep: ConversationStep.SNOWBOARD_BOOTS,
     updatedData: { ...data, currentMember: member },
-    reply: t(data.language, 'helmet_prompt', { firstname: member.firstname ?? '' }),
+    reply: { body: t(lang, 'snowboard_boots_q', { firstname: member.firstname ?? '' }), buttons: [t(lang, 'btn_yes'), t(lang, 'btn_no')] } satisfies ButtonReply,
   };
 }
 
 // --- Other branch ---
 
 function handleOtherCategory(data: InternalData, input: string): StepResult | null {
-  const choice = input.trim();
+  const lower = input.trim().toLowerCase();
+  const lang = data.language;
 
-  if (choice === '1') {
+  const isTouring = lower === '1' || lower === 'touring' || lower === 'touren';
+  const isXc = lower === '2' || lower === 'cross country' || lower === 'langlauf' || lower === 'xc';
+  const isMisc = lower === '3' || lower === 'misc' || lower === 'sonstiges' || lower === 'miscellaneous';
+
+  if (isTouring) {
     return {
       nextStep: ConversationStep.TOURING_ITEMS,
       updatedData: { ...data, currentBranch: 'touring' },
-      reply: t(data.language, 'touring_items_prompt'),
+      reply: t(lang, 'touring_items_prompt'),
     };
   }
-  if (choice === '2') {
+  if (isXc) {
     return {
       nextStep: ConversationStep.XC_TYPE,
       updatedData: { ...data, currentBranch: 'xc' },
-      reply: t(data.language, 'xc_type_prompt'),
+      reply: { body: t(lang, 'xc_type_q'), buttons: [t(lang, 'btn_classic'), t(lang, 'btn_skating')] } satisfies ButtonReply,
     };
   }
-  if (choice === '3') {
+  if (isMisc) {
     return {
       nextStep: ConversationStep.MISC_ITEM,
       updatedData: { ...data, currentBranch: 'misc' },
-      reply: t(data.language, 'misc_item_prompt'),
+      reply: { body: t(lang, 'misc_item_q'), buttons: [t(lang, 'btn_snowshoes'), t(lang, 'btn_sleigh')] } satisfies ButtonReply,
     };
   }
   return null;
@@ -877,37 +920,39 @@ function handleTouringItems(
 
   const equipment = [...(data.currentMember?.equipment ?? []), ...selected];
   const member = { ...data.currentMember, equipment };
+  const lang = data.language;
   return {
     nextStep: ConversationStep.HELMET,
     updatedData: { ...data, currentMember: member },
-    reply: t(data.language, 'helmet_prompt', { firstname: member.firstname ?? '' }),
+    reply: { body: t(lang, 'helmet_q', { firstname: member.firstname ?? '' }), buttons: [t(lang, 'btn_yes'), t(lang, 'btn_no')] } satisfies ButtonReply,
   };
 }
 
 function handleXcType(data: InternalData, input: string): StepResult | null {
   const itemMap: Record<string, EquipmentItem> = {
-    '1': 'xc_classic',
-    '2': 'xc_skating',
+    '1': 'xc_classic', 'classic': 'xc_classic', 'klassisch': 'xc_classic',
+    '2': 'xc_skating', 'skating': 'xc_skating',
   };
-  const item = itemMap[input.trim()];
+  const item = itemMap[input.trim().toLowerCase()];
   if (!item) return null;
 
+  const lang = data.language;
+  const firstname = data.currentMember?.firstname ?? '';
   const equipment = [...(data.currentMember?.equipment ?? []), item];
   return {
     nextStep: ConversationStep.XC_BOOTS,
     updatedData: { ...data, currentMember: { ...data.currentMember, equipment } },
-    reply: t(data.language, 'xc_boots_prompt', { firstname: data.currentMember?.firstname ?? '' }),
+    reply: { body: t(lang, 'xc_boots_q', { firstname }), buttons: [t(lang, 'btn_yes'), t(lang, 'btn_no')] } satisfies ButtonReply,
   };
 }
 
 function handleXcBoots(data: InternalData, input: string): StepResult | null {
-  const choice = input.trim();
+  const answer = normalizeYesNo(input, data.language);
+  if (!answer) return null;
   const currentEquipment = data.currentMember?.equipment ?? [];
 
-  if (choice !== '1' && choice !== '2') return null;
-
   let equipment = [...currentEquipment];
-  if (choice === '1') {
+  if (answer === 'yes') {
     const bootsItem: EquipmentItem = currentEquipment.includes('xc_classic')
       ? 'xc_classic_boots'
       : 'xc_skating_boots';
@@ -925,10 +970,10 @@ function handleXcBoots(data: InternalData, input: string): StepResult | null {
 
 function handleMiscItem(data: InternalData, input: string): StepResult | null {
   const itemMap: Record<string, EquipmentItem> = {
-    '1': 'snowshoes',
-    '2': 'sleigh',
+    '1': 'snowshoes', 'snowshoes': 'snowshoes', 'schneeschuhe': 'snowshoes',
+    '2': 'sleigh',    'sleigh': 'sleigh',         'schlitten': 'sleigh',
   };
-  const item = itemMap[input.trim()];
+  const item = itemMap[input.trim().toLowerCase()];
   if (!item) return null;
 
   const equipment = [...(data.currentMember?.equipment ?? []), item];
@@ -940,27 +985,26 @@ function handleMiscItem(data: InternalData, input: string): StepResult | null {
 // --- Shared: Helmet, Measurements, Hotel ---
 
 function handleHelmet(data: InternalData, input: string): StepResult | null {
-  const choice = input.trim();
+  const answer = normalizeYesNo(input, data.language);
+  if (!answer) return null;
+  const lang = data.language;
 
-  if (choice === '1') {
+  if (answer === 'yes') {
     return {
       nextStep: ConversationStep.HELMET_TYPE,
       updatedData: { ...data },
-      reply: t(data.language, 'helmet_type_prompt'),
+      reply: { body: t(lang, 'helmet_type_q'), buttons: [t(lang, 'btn_with_visor'), t(lang, 'btn_without_visor')] } satisfies ButtonReply,
     };
   }
-  if (choice === '2') {
-    return afterHelmet(data, data.currentMember ?? {}, data.language);
-  }
-  return null;
+  return afterHelmet(data, data.currentMember ?? {}, lang);
 }
 
 function handleHelmetType(data: InternalData, input: string): StepResult | null {
   const itemMap: Record<string, EquipmentItem> = {
-    '1': 'helmet_visor',
-    '2': 'helmet_no_visor',
+    '1': 'helmet_visor',    'with visor': 'helmet_visor',    'mit visier': 'helmet_visor',
+    '2': 'helmet_no_visor', 'no visor': 'helmet_no_visor',   'ohne visier': 'helmet_no_visor',
   };
-  const item = itemMap[input.trim()];
+  const item = itemMap[input.trim().toLowerCase()];
   if (!item) return null;
 
   const equipment = [...(data.currentMember?.equipment ?? []), item];
@@ -980,11 +1024,12 @@ function handleHotel(data: InternalData, input: string): StepResult | null {
   const hotel = input.trim();
   if (!hotel) return null;
 
+  const lang = data.language;
   const member = { ...data.currentMember, hotel };
   return {
     nextStep: ConversationStep.ADD_PERSON,
     updatedData: { ...data, currentMember: member, groupHotel: hotel },
-    reply: t(data.language, 'add_person_prompt'),
+    reply: { body: t(lang, 'add_person_q'), buttons: [t(lang, 'btn_yes'), t(lang, 'btn_no')] } satisfies ButtonReply,
   };
 }
 
@@ -1198,7 +1243,7 @@ export async function processMessage(
   shopId: string,
   waPhone: string,
   incomingText: string,
-): Promise<string> {
+): Promise<BotReply> {
   let shop: ShopRow | null;
   try {
     shop = await loadShop(shopId);
@@ -1238,7 +1283,10 @@ export async function processMessage(
     }
     // Fresh conversation — return the welcome prompt immediately without
     // processing the triggering input (which may be a reset keyword or '1').
-    return t('de', 'welcome', { shopName: shop.name });
+    return {
+      body: t('de', 'welcome_q', { shopName: shop.name }),
+      buttons: [t('de', 'btn_deutsch'), t('de', 'btn_english')],
+    } satisfies ButtonReply;
   }
 
   const language: Language = conversation.language ?? 'de';
@@ -1251,7 +1299,10 @@ export async function processMessage(
       console.error('[stateMachine] DB error resetting expired conversation:', err);
       return t(language, 'error_generic');
     }
-    return t(language, 'session_expired', { shopName: shop.name });
+    return {
+      body: t('de', 'session_expired_q', { shopName: shop.name }),
+      buttons: [t('de', 'btn_deutsch'), t('de', 'btn_english')],
+    } satisfies ButtonReply;
   }
 
   const currentStep = conversation.step as ConversationStep;
@@ -1274,7 +1325,7 @@ async function routeStep(
   shopConfig: ShopEasyrentConfig,
   conversationId: string,
   ttl: number,
-): Promise<string> {
+): Promise<BotReply> {
   let result: StepResult | null = null;
   const kid = isKid(data.currentMember?.dob ?? '1900-01-01');
 
@@ -1495,7 +1546,10 @@ async function routeStep(
     }
 
     case ConversationStep.DONE: {
-      return t(language, 'welcome', { shopName: shop.name });
+      return {
+        body: t('de', 'welcome_q', { shopName: shop.name }),
+        buttons: [t('de', 'btn_deutsch'), t('de', 'btn_english')],
+      } satisfies ButtonReply;
     }
 
     default: {
