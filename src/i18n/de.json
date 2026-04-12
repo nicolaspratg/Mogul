@@ -29,6 +29,12 @@
   "person_dob_invalid": "Ungültiges Datum. Bitte verwenden Sie das Format TT.MM.JJJJ (z. B. 15.03.1990).",
   "person_dob_future": "Das Geburtsdatum darf nicht heute oder in der Zukunft liegen.",
 
+  "person_gender_q": "Was ist {{firstname}}s Geschlecht?",
+  "person_gender_invalid": "Bitte wählen Sie eine der Optionen.",
+  "btn_male": "Mann",
+  "btn_female": "Frau",
+  "btn_other_gender": "Divers",
+
   "equipment_category_prompt_adult": "Was möchte {{firstname}} mieten?\n1 - Ski\n2 - Snowboard\n3 - Sonstiges (Touren, Langlauf, Schneeschuhe...)",
   "equipment_category_prompt_kid": "Was möchte {{firstname}} mieten?\n1 - Ski\n2 - Snowboard",
   "equipment_category_invalid_adult": "Bitte wählen Sie 1 (Ski), 2 (Snowboard) oder 3 (Sonstiges).",

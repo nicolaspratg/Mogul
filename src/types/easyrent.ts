@@ -594,10 +594,20 @@ export type EquipmentItem =
   | 'kids_ski'
   | 'kids_boots';
 
+export type Gender = 'male' | 'female' | 'other';
+
+/** Maps our Gender type to Easyrent's er_genderid. 0 = unspecified/other. */
+export const GENDER_ID: Record<Gender, number> = {
+  male:   2,
+  female: 1,
+  other:  0,
+};
+
 export interface GroupMember {
   firstname: string;
   lastname: string;
   dob: string;             // ISO date "YYYY-MM-DD"
+  gender?: Gender;
   equipment: EquipmentItem[];
   heightcm?: number;
   weightkg?: number;

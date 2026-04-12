@@ -29,6 +29,12 @@
   "person_dob_invalid": "Invalid date. Please use the format DD.MM.YYYY (e.g. 15.03.1990).",
   "person_dob_future": "Date of birth cannot be today or in the future.",
 
+  "person_gender_q": "What is {{firstname}}'s gender?",
+  "person_gender_invalid": "Please choose one of the options.",
+  "btn_male": "Man",
+  "btn_female": "Woman",
+  "btn_other_gender": "Other",
+
   "equipment_category_prompt_adult": "What would {{firstname}} like to rent?\n1 - Ski\n2 - Snowboard\n3 - Other (Touring, Cross Country, Snowshoes...)",
   "equipment_category_prompt_kid": "What would {{firstname}} like to rent?\n1 - Ski\n2 - Snowboard",
   "equipment_category_invalid_adult": "Please choose 1 (Ski), 2 (Snowboard), or 3 (Other).",

@@ -31,6 +31,7 @@ import { pool } from '../db/pool';
 import { config } from '../config';
 import { t } from '../i18n';
 import { type BotReply, type ButtonReply, type ListReply, type ListItem } from '../types/bot';
+import { type Gender, GENDER_ID } from '../types/easyrent';
 import {
   EasyrentError,
   type Language,
@@ -175,6 +176,7 @@ export enum ConversationStep {
   // Per-person
   PERSON_NAME        = 'person_name',
   PERSON_DOB         = 'person_dob',
+  PERSON_GENDER      = 'person_gender',
   EQUIPMENT_CATEGORY = 'equipment_category',
   // Ski branch
   SKI_SKILL          = 'ski_skill',
@@ -336,6 +338,12 @@ function skillFromInput(input: string): SkillLevel | null {
     anfänger: 'beginner', fortgeschritten: 'intermediate', experte: 'advanced',
   };
   return map[input.trim().toLowerCase()] ?? null;
+}
+
+/** Maps our 2-letter Language code to Easyrent's ISO 639-2 languagecode. */
+function langToEasyrent(language: Language): string {
+  const map: Record<Language, string> = { de: 'deu', en: 'eng', it: 'ita' };
+  return map[language];
 }
 
 function skillToEasyrentId(skill: SkillLevel): number {
@@ -606,17 +614,44 @@ function handlePersonDob(data: InternalData, input: string): StepResult | 'inval
   if (result === 'future') return 'future';
 
   const member = { ...data.currentMember, dob: result };
-  const kid = isKid(result);
+  const lang = data.language;
+  return {
+    nextStep: ConversationStep.PERSON_GENDER,
+    updatedData: { ...data, currentMember: member },
+    reply: {
+      body: t(lang, 'person_gender_q', { firstname: member.firstname ?? '' }),
+      buttons: [t(lang, 'btn_male'), t(lang, 'btn_female'), t(lang, 'btn_other_gender')],
+    } satisfies ButtonReply,
+  };
+}
+
+function handlePersonGender(data: InternalData, input: string): StepResult | null {
+  const lower = input.trim().toLowerCase();
+  const lang = data.language;
+  const firstname = data.currentMember?.firstname ?? '';
+
+  let gender: Gender;
+  if (['1', 'male', 'mann', 'man', 'm'].includes(lower)) {
+    gender = 'male';
+  } else if (['2', 'female', 'frau', 'woman', 'f', 'w'].includes(lower)) {
+    gender = 'female';
+  } else if (['3', 'other', 'divers', 'diverse', 'x'].includes(lower)) {
+    gender = 'other';
+  } else {
+    return null;
+  }
+
+  const member = { ...data.currentMember, gender };
+  const kid = isKid(member.dob ?? '1900-01-01');
   const equipButtons: string[] = kid
-    ? [t(data.language, 'btn_ski'), t(data.language, 'btn_snowboard')]
-    : [t(data.language, 'btn_ski'), t(data.language, 'btn_snowboard'), t(data.language, 'btn_other')];
+    ? [t(lang, 'btn_ski'), t(lang, 'btn_snowboard')]
+    : [t(lang, 'btn_ski'), t(lang, 'btn_snowboard'), t(lang, 'btn_other')];
+
   return {
     nextStep: ConversationStep.EQUIPMENT_CATEGORY,
     updatedData: { ...data, currentMember: member },
     reply: {
-      body: t(data.language, kid ? 'equipment_category_q_kid' : 'equipment_category_q_adult', {
-        firstname: member.firstname ?? '',
-      }),
+      body: t(lang, kid ? 'equipment_category_q_kid' : 'equipment_category_q_adult', { firstname }),
       buttons: equipButtons,
     } satisfies ButtonReply,
   };
@@ -1091,7 +1126,8 @@ async function createEasyrentReservation(
       weightkg:             primary.weightkg,
       solemm:               primary.solemm,
       int_isoskiertypeid:   primary.skillLevel ? skillToEasyrentId(primary.skillLevel) : undefined,
-      languagecode:         data.language,
+      er_genderid:          primary.gender !== undefined ? GENDER_ID[primary.gender] : undefined,
+      languagecode:         langToEasyrent(data.language),
     },
   });
 
@@ -1111,8 +1147,9 @@ async function createEasyrentReservation(
         weightkg:           member.weightkg,
         solemm:             member.solemm,
         int_isoskiertypeid: member.skillLevel ? skillToEasyrentId(member.skillLevel) : undefined,
+        er_genderid:        member.gender !== undefined ? GENDER_ID[member.gender] : undefined,
         er_groupcode:       groupCode,
-        languagecode:       data.language,
+        languagecode:       langToEasyrent(data.language),
       },
     });
     memberCodes.push(result.customerresult.er_custcode);
@@ -1372,6 +1409,12 @@ async function routeStep(
       if (r === 'invalid') return t(language, 'person_dob_invalid');
       if (r === 'future')  return t(language, 'person_dob_future');
       result = r;
+      break;
+    }
+
+    case ConversationStep.PERSON_GENDER: {
+      result = handlePersonGender(data, input);
+      if (!result) return t(language, 'person_gender_invalid');
       break;
     }
 
