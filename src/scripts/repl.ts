@@ -18,6 +18,7 @@
 import * as readline from 'readline';
 import { pool } from '../db/pool';
 import { processMessage } from '../conversation/stateMachine';
+import { type BotReply, botReplyToText } from '../types/bot';
 
 const FAKE_PHONE = '+10000000001';
 
@@ -73,7 +74,7 @@ async function main(): Promise<void> {
     const text = line.trim();
     if (!text) continue;
 
-    let reply: string;
+    let reply: BotReply;
     try {
       reply = await processMessage(shopId, FAKE_PHONE, text);
     } catch (err) {
@@ -81,7 +82,7 @@ async function main(): Promise<void> {
       continue;
     }
 
-    console.log('\nBot:\n' + reply + '\n');
+    console.log('\nBot:\n' + botReplyToText(reply) + '\n');
   }
 
   await pool.end();

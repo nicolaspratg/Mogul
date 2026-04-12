@@ -20,6 +20,7 @@ import { Router, type Request, type Response } from 'express';
 import { pool } from '../db/pool';
 import { processMessage } from '../conversation/stateMachine';
 import { config } from '../config';
+import { type BotReply, type ButtonReply, type ListReply, isButtonReply, isListReply, botReplyToText } from '../types/bot';
 
 export const twilioRouter = Router();
 
@@ -84,7 +85,11 @@ function splitMessage(text: string): string[] {
   return parts;
 }
 
-async function sendTwilioMessage(to: string, body: string): Promise<void> {
+function twilioBasicAuth(sid: string, token: string): string {
+  return `Basic ${Buffer.from(`${sid}:${token}`).toString('base64')}`;
+}
+
+async function sendTwilioTextMessage(to: string, body: string): Promise<void> {
   const { twilioAccountSid, twilioAuthToken, twilioWhatsappFrom } = config;
   const url = `https://api.twilio.com/2010-04-01/Accounts/${twilioAccountSid}/Messages.json`;
 
@@ -100,7 +105,7 @@ async function sendTwilioMessage(to: string, body: string): Promise<void> {
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
-        Authorization: `Basic ${Buffer.from(`${twilioAccountSid}:${twilioAuthToken}`).toString('base64')}`,
+        Authorization: twilioBasicAuth(twilioAccountSid!, twilioAuthToken!),
       },
       body: params.toString(),
     });
@@ -115,11 +120,158 @@ async function sendTwilioMessage(to: string, body: string): Promise<void> {
   }
 }
 
-async function sendReply(to: string, text: string): Promise<void> {
+async function sendTextReply(to: string, text: string): Promise<void> {
   const parts = splitMessage(text);
   for (const part of parts) {
-    await sendTwilioMessage(to, part);
+    await sendTwilioTextMessage(to, part);
   }
+}
+
+// ---------------------------------------------------------------------------
+// Twilio Content API — on-demand interactive message templates
+// ---------------------------------------------------------------------------
+
+/** In-memory cache: content hash → ContentSid */
+const templateCache = new Map<string, string>();
+
+function templateCacheKey(reply: ButtonReply | ListReply): string {
+  if (isButtonReply(reply)) {
+    return `btn:${reply.body}::${reply.buttons.join('|')}`;
+  }
+  return `list:${reply.body}::${reply.buttonLabel}::${reply.items.map(i => `${i.id}=${i.title}`).join('|')}`;
+}
+
+async function getOrCreateContentSid(
+  sid: string,
+  token: string,
+  reply: ButtonReply | ListReply,
+): Promise<string | null> {
+  const key = templateCacheKey(reply);
+  const cached = templateCache.get(key);
+  if (cached) return cached;
+
+  let types: Record<string, unknown>;
+  if (isButtonReply(reply)) {
+    types = {
+      'twilio/quick-reply': {
+        body: reply.body,
+        actions: reply.buttons.map((title, i) => ({ title, id: `btn_${i}` })),
+      },
+    };
+  } else {
+    types = {
+      'twilio/list-picker': {
+        body: reply.body,
+        button: reply.buttonLabel,
+        items: reply.items.map(item => ({
+          id: item.id,
+          item: item.title,
+          ...(item.description ? { description: item.description } : {}),
+        })),
+      },
+    };
+  }
+
+  let response: globalThis.Response;
+  try {
+    response = await fetch('https://content.twilio.com/v1/Content', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: twilioBasicAuth(sid, token),
+      },
+      body: JSON.stringify({
+        friendly_name: `mogul_${Date.now()}`,
+        language: 'en',
+        types,
+      }),
+    });
+  } catch (err) {
+    console.error('[twilio] Network error creating content template:', err);
+    return null;
+  }
+
+  if (!response.ok) {
+    const errBody = await response.text().catch(() => '');
+    console.error(`[twilio] Content API error ${response.status}:`, errBody);
+    return null;
+  }
+
+  const json = await response.json() as { sid: string };
+  templateCache.set(key, json.sid);
+  console.info(`[twilio] Created content template ${json.sid}`);
+  return json.sid;
+}
+
+async function sendTwilioContentMessage(
+  to: string,
+  contentSid: string,
+): Promise<void> {
+  const { twilioAccountSid, twilioAuthToken, twilioWhatsappFrom } = config;
+  const url = `https://api.twilio.com/2010-04-01/Accounts/${twilioAccountSid}/Messages.json`;
+
+  const params = new URLSearchParams({
+    From: twilioWhatsappFrom!,
+    To: `whatsapp:${to}`,
+    ContentSid: contentSid,
+  });
+
+  let response: globalThis.Response;
+  try {
+    response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        Authorization: twilioBasicAuth(twilioAccountSid!, twilioAuthToken!),
+      },
+      body: params.toString(),
+    });
+  } catch (err) {
+    console.error('[twilio] Network error sending interactive message:', err);
+    return;
+  }
+
+  if (!response.ok) {
+    const errBody = await response.text().catch(() => '');
+    console.error(`[twilio] API error ${response.status} sending interactive to ${to}:`, errBody);
+  }
+}
+
+/** WhatsApp interactive message body hard limit (Twilio Content API). */
+const INTERACTIVE_BODY_MAX = 1024;
+
+async function sendReply(to: string, reply: BotReply): Promise<void> {
+  if (typeof reply === 'string') {
+    await sendTextReply(to, reply);
+    return;
+  }
+
+  const { twilioAccountSid, twilioAuthToken } = config;
+  if (!twilioAccountSid || !twilioAuthToken) {
+    await sendTextReply(to, botReplyToText(reply));
+    return;
+  }
+
+  // If the body is too long for an interactive message (e.g. booking summary),
+  // send the long content as plain text first, then send a short interactive
+  // message using only the last paragraph (after the final double-newline).
+  let interactiveReply: ButtonReply | ListReply = reply;
+  if (isButtonReply(reply) && reply.body.length > INTERACTIVE_BODY_MAX) {
+    const split = reply.body.lastIndexOf('\n\n');
+    const textPart = split > 0 ? reply.body.slice(0, split) : reply.body;
+    const shortBody = split > 0 ? reply.body.slice(split + 2) : '↑';
+    await sendTextReply(to, textPart);
+    interactiveReply = { body: shortBody, buttons: reply.buttons };
+  }
+
+  const contentSid = await getOrCreateContentSid(twilioAccountSid, twilioAuthToken, interactiveReply);
+  if (!contentSid) {
+    console.warn('[twilio] Falling back to plain text for interactive reply');
+    await sendTextReply(to, botReplyToText(reply));
+    return;
+  }
+
+  await sendTwilioContentMessage(to, contentSid);
 }
 
 // ---------------------------------------------------------------------------
@@ -190,7 +342,7 @@ if (accountSid !== config.twilioAccountSid) {
   }
 
   // 7. Run the state machine
-  let reply: string;
+  let reply: BotReply;
   try {
     reply = await processMessage(shopId, waPhone, isResetCommand(incomingText) ? '1' : incomingText);
   } catch (err) {
@@ -198,6 +350,6 @@ if (accountSid !== config.twilioAccountSid) {
     reply = 'Sorry, something went wrong. Please try again.';
   }
 
-  // 8. Send reply
+  // 8. Send reply (interactive or plain text)
   await sendReply(waPhone, reply);
 });

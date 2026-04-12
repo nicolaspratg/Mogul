@@ -21,6 +21,7 @@ import { Router, type Request, type Response } from 'express';
 import { config } from '../config';
 import { pool } from '../db/pool';
 import { processMessage } from '../conversation/stateMachine';
+import { type BotReply, botReplyToText } from '../types/bot';
 
 export const whatsappRouter = Router();
 
@@ -346,20 +347,20 @@ whatsappRouter.post('/:shopId', async (req: Request, res: Response) => {
         }
 
         // 8. Run the state machine
-        let reply: string;
+        let botReply: BotReply;
         try {
-          reply = await processMessage(shopId, waPhone, isResetCommand(incomingText) ? '1' : incomingText);
+          botReply = await processMessage(shopId, waPhone, isResetCommand(incomingText) ? '1' : incomingText);
         } catch (err) {
           console.error('[webhook] Unhandled state machine error:', err);
-          reply = 'Sorry, something went wrong. Please try again.';
+          botReply = 'Sorry, something went wrong. Please try again.';
         }
 
-        // 9. Send reply (splits automatically if >4096 chars)
+        // 9. Send reply (plain text fallback until Meta interactive messages are wired up)
         await sendReply(
           shopCreds.whatsapp_phone_number_id,
           shopCreds.whatsapp_token,
           waPhone,
-          reply,
+          botReplyToText(botReply),
         );
       }
     }
