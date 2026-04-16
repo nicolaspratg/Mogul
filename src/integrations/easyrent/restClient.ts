@@ -15,6 +15,8 @@ import {
   type RestReservableArticle,
   type RestGetAvailData,
   type RestGetAvailResult,
+  type RestGetAvailCountBody,
+  type RestGetAvailCountResponse,
   type RestEquipmentType,
   type RestRentalGroup,
   type RestCalendarAvailability,
@@ -193,10 +195,12 @@ export async function restGetAvailCount(
       `${shopConfig.restBaseUrl}/reservation/getavailcount`,
       { accessId: shopConfig.accessId },
     );
-    return fetchJson<RestGetAvailResult[]>(url, {
+    const body: RestGetAvailCountBody = { getavail: getavailData };
+    const response = await fetchJson<RestGetAvailCountResponse>(url, {
       method: 'POST',
-      body: JSON.stringify(getavailData),
+      body: JSON.stringify(body),
     });
+    return response.getavailresult;
   }, 'POST /reservation/getavailcount');
 }
 
@@ -213,25 +217,21 @@ export async function restGetAvailCountDt(
       `${shopConfig.restBaseUrl}/reservation/getavailcountdt`,
       { accessId: shopConfig.accessId },
     );
-    return fetchJson<RestGetAvailResult[]>(url, {
+    const body: RestGetAvailCountBody = { getavail: getavailData };
+    const response = await fetchJson<RestGetAvailCountResponse>(url, {
       method: 'POST',
-      body: JSON.stringify(getavailData),
+      body: JSON.stringify(body),
     });
+    return response.getavailresult;
   }, 'POST /reservation/getavailcountdt');
 }
 
 /**
  * POST /reservation/insertupdatereservation — create or update a reservation.
- * This is the key Step 9 endpoint that returns the reservation code.
- *
- * TODO: The exact body structure for `reservationData` is NOT YET CONFIRMED.
- * It must be validated against a live Easyrent instance before this function
- * is used in production. The current body type (RestReservationBody) is a
- * typed placeholder based on the SOAP API and Easyrent data model.
- *
- * Also investigate the possible two-step basket flow:
- *   PUT /reservation/basket/{basketid}  →  confirm  →  reservation code
- * See restCreateBasket / restDeleteBasket stubs below.
+ * Body: { reservation: { reservationextid, origin, datefrom, dateto, er_branchid, person[] } }
+ * Each person carries their own article[] array.
+ * The basket flow (PUT/DELETE /reservation/basket) is optional — only needed if
+ * article availability must be locked before committing the reservation.
  */
 export async function restInsertUpdateReservation(
   shopConfig: ShopEasyrentConfig,

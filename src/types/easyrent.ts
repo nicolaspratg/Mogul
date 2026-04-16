@@ -328,12 +328,27 @@ export interface RestGetAvailResult {
   availcount: number;
 }
 
+/** Wrapped request body for POST /reservation/getavailcount and /getavailcountdt */
+export interface RestGetAvailCountBody {
+  getavail: RestGetAvailData[];
+}
+
+/** Wrapped response from POST /reservation/getavailcount and /getavailcountdt */
+export interface RestGetAvailCountResponse {
+  getavailresult: RestGetAvailResult[];
+}
+
 /** Equipment type entry from GET /reservation/reservablearticles */
 export interface RestReservableArticle {
-  // Exact fields to be confirmed by live testing.
-  er_rentalgroupid?: number;
-  name?: string;
-  [key: string]: unknown;
+  er_rentalgroupid: number;
+  rentalgroupname: string;
+  rentalgrouptype: 'R' | 'D';
+  typeofequipmentname: string;
+  property1?: string;
+  er_modelid?: number;
+  modelname?: string;
+  modelyear?: number;
+  modelbrand?: string;
 }
 
 /** Branch entry from GET /branches */
@@ -414,49 +429,90 @@ export interface RestReservationLookup {
   [key: string]: unknown;
 }
 
-/**
- * Body for POST /reservation/insertupdatereservation.
- *
- * TODO: The exact structure must be confirmed by testing against a live
- * Easyrent instance. Based on the SOAP API and Easyrent data model, the body
- * likely contains customerCode, groupCode, branchId, dateFrom, dateTo, and a
- * positions array (rentalGroupId + equipmentTypeId per person).
- *
- * Also investigate whether a two-step basket flow is required:
- *   PUT /reservation/basket/{basketid}  →  confirm  →  reservation code
- * If so, this type will need to be split into basket and confirmation shapes.
- */
-export interface RestReservationBody {
-  customerCode?: string;
-  groupCode?: string;
-  branchId?: number;
-  dateFrom?: string; // ISO 8601
-  dateTo?: string;
-  positions?: Array<{
-    rentalGroupId: number;
-    equipmentTypeId?: number;
-    quantity?: number;
-    customerCode?: string;
-  }>;
-  [key: string]: unknown; // placeholder until structure is confirmed
+/** Article item within a reservation person. */
+export interface RestReservationArticle {
+  articletype?: 'R' | 'D' | 'M';
+  er_rentalgroupid?: number;
+  rentalgroupname?: string;  // confirmed from GET /reservation/reservablearticles
+  property1?: string;        // length/size
+  er_modelid?: number;
+  modelname?: string;
+  datefrom?: string;
+  dateto?: string;
+  quantity?: number;
+  netprice?: number;
+  grossprice?: number;
+  discountpercent?: number;
 }
 
-/** Response from POST /reservation/insertupdatereservation */
+/** Person within a reservation, with their articles. */
+export interface RestReservationPerson {
+  firstname: string;
+  lastname: string;
+  er_genderid?: number;
+  er_titleid?: number;
+  dateofbirth?: string;
+  age?: number;
+  mainperson?: boolean;
+  weightkg?: number;
+  heightcm?: number;
+  /** 0=beginner/TypeI, 1=intermediate/TypeII, 2=expert/TypeIII, 3=TypeI-, 4=TypeIII+ */
+  er_isoskiertypeid?: number;
+  bootsize?: string;
+  solemm?: number;
+  email?: string;
+  mobile?: string;
+  hotelname?: string;
+  remark?: string;
+  er_custid?: number;   // links to existing Easyrent customer
+  custextid?: string;
+  article?: RestReservationArticle[];
+}
+
+/** Reservation payload for POST /reservation/insertupdatereservation. */
+export interface RestReservationData {
+  reservationextid: string;   // unique ID in our system
+  origin: string;             // our system name, e.g. "AlpChat"
+  datefrom: string;           // ISO date YYYY-MM-DD
+  dateto: string;
+  er_branchid?: number;
+  branchextid?: string;
+  datecreated?: string;
+  datelastupdated?: string;
+  cancelled?: boolean;
+  amountprepaid?: number;
+  voucherlink?: string;
+  person: RestReservationPerson[];
+}
+
+/** Body wrapper for POST /reservation/insertupdatereservation. */
+export interface RestReservationBody {
+  reservation: RestReservationData;
+}
+
+/** Response from POST /reservation/insertupdatereservation. */
 export interface RestReservationResponse {
   reservationCode?: string;
   reservationId?: number;
-  [key: string]: unknown; // placeholder until structure is confirmed
+  [key: string]: unknown;
 }
 
-/**
- * Body for PUT /reservation/basket/{basketid}.
- *
- * TODO: Basket endpoint structure is unconfirmed. There may be a two-step
- * reservation flow: create basket → confirm → reservation. Test against live
- * instance before implementing the basket path.
- */
+/** Article within a basket. */
+export interface RestBasketArticle {
+  er_rentalgroupid: number;
+  property1?: string;
+  er_modelid?: number;
+  er_depotlocatonid?: number; // note: spec typo — one 'i' in location
+}
+
+/** Body for PUT /reservation/basket/{basketid}. */
 export interface RestBasketBody {
-  [key: string]: unknown;
+  basketid: string;
+  expiresat: string; // ISO 8601 date-time
+  datefrom: string;
+  dateto: string;
+  er_branchid: number;
+  articles: RestBasketArticle[];
 }
 
 // ---------------------------------------------------------------------------
@@ -596,11 +652,11 @@ export type EquipmentItem =
 
 export type Gender = 'male' | 'female' | 'other';
 
-/** Maps our Gender type to Easyrent's er_genderid. 0 = unspecified/other. */
+/** Maps our Gender type to Easyrent's er_genderid. */
 export const GENDER_ID: Record<Gender, number> = {
   male:   2,
   female: 1,
-  other:  0,
+  other:  4,
 };
 
 export interface GroupMember {

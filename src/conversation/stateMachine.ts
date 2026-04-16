@@ -41,10 +41,6 @@ import {
   type ConversationData,
 } from '../types/easyrent';
 import type { ShopEasyrentConfig } from '../integrations/easyrent/soapClient';
-import {
-  soapCustInsertOrUpdateV2,
-  soapSetGroupCustomerV2,
-} from '../integrations/easyrent/soapClient';
 import { restInsertUpdateReservation } from '../integrations/easyrent/restClient';
 
 // ---------------------------------------------------------------------------
@@ -211,7 +207,6 @@ export enum ConversationStep {
 interface InternalData extends ConversationData {
   currentMember?: Partial<GroupMember>;
   currentBranch?: Branch;
-  rentalGroupIds?: number[];
   groupHotel?: string;
 }
 
@@ -340,16 +335,47 @@ function skillFromInput(input: string): SkillLevel | null {
   return map[input.trim().toLowerCase()] ?? null;
 }
 
-/** Maps our 2-letter Language code to Easyrent's ISO 639-2 languagecode. */
-function langToEasyrent(language: Language): string {
-  const map: Record<Language, string> = { de: 'deu', en: 'eng', it: 'ita' };
-  return map[language];
-}
 
-function skillToEasyrentId(skill: SkillLevel): number {
-  const map: Record<SkillLevel, number> = { beginner: 1, intermediate: 2, advanced: 3 };
+function skillToEasyrentRestId(skill: SkillLevel): number {
+  // REST er_isoskiertypeid: 0=beginner/TypeI, 1=intermediate/TypeII, 2=expert/TypeIII
+  const map: Record<SkillLevel, number> = { beginner: 0, intermediate: 1, advanced: 2 };
   return map[skill];
 }
+
+/**
+ * Maps our EquipmentItem catalog keys to Easyrent rentalgroupname values.
+ * These names must match exactly what is configured in the shop's Easyrent system.
+ * Verify against GET /reservation/reservablearticles on first live access.
+ */
+const EQUIPMENT_RENTAL_GROUP: Record<EquipmentItem, string> = {
+  ski_factory_test:      'Factory Test Ski',
+  ski_diamant:           'Diamant Ski',
+  ski_premium:           'Premium Ski',
+  ski_economy:           'Economy Ski',
+  ski_basic:             'Basic Ski',
+  ski_boots_premium:     'Premium Ski Boots',
+  ski_boots_economy:     'Economy Ski Boots',
+  snowboard_premium:     'Premium Snowboard',
+  snowboard_economy:     'Economy Snowboard',
+  snowboard_boots:       'Snowboard Boots',
+  xc_classic:            'XC Classic Ski',
+  xc_classic_boots:      'XC Classic Boots',
+  xc_skating:            'XC Skating Ski',
+  xc_skating_boots:      'XC Skating Boots',
+  touring_ski:           'Touring Ski',
+  touring_boots:         'Touring Boots',
+  touring_backpack:      'Touring Backpack',
+  touring_radar:         'Avalanche Radar',
+  touring_shovel:        'Avalanche Shovel',
+  touring_avalanche_bag: 'Avalanche Bag',
+  touring_probe:         'Avalanche Probe',
+  helmet_visor:          'Helmet with Visor',
+  helmet_no_visor:       'Helmet',
+  snowshoes:             'Snowshoes',
+  sleigh:                'Sleigh',
+  kids_ski:              'Kids Ski',
+  kids_boots:            'Kids Ski Boots',
+};
 
 function skillLabel(skill: SkillLevel, language: Language): string {
   const keyMap: Record<SkillLevel, string> = {
@@ -1113,69 +1139,32 @@ async function createEasyrentReservation(
   const members = data.members ?? [];
   if (members.length === 0) throw new Error('No members in reservation');
 
-  const primary = members[0];
-
-  // 1. Create / update primary customer
-  const primaryResult = await soapCustInsertOrUpdateV2(shopConfig, {
-    customer: {
-      firstname:            primary.firstname,
-      lastname:             primary.lastname,
-      dateofbirth:          primary.dob ? new Date(primary.dob) : undefined,
-      hotelname:            primary.hotel,
-      heightcm:             primary.heightcm,
-      weightkg:             primary.weightkg,
-      solemm:               primary.solemm,
-      int_isoskiertypeid:   primary.skillLevel ? skillToEasyrentId(primary.skillLevel) : undefined,
-      er_genderid:          primary.gender !== undefined ? GENDER_ID[primary.gender] : undefined,
-      languagecode:         langToEasyrent(data.language),
+  const reservationResult = await restInsertUpdateReservation(shopConfig, {
+    reservation: {
+      reservationextid: `alpchat-${Date.now()}`,
+      origin:           'AlpChat',
+      datefrom:         data.datefrom!,
+      dateto:           data.dateto!,
+      er_branchid:      shopConfig.branchId,
+      person:           members.map((member, i) => ({
+        firstname:         member.firstname,
+        lastname:          member.lastname,
+        dateofbirth:       member.dob,
+        mainperson:        i === 0,
+        weightkg:          member.weightkg,
+        heightcm:          member.heightcm,
+        solemm:            member.solemm,
+        er_isoskiertypeid: member.skillLevel ? skillToEasyrentRestId(member.skillLevel) : undefined,
+        er_genderid:       member.gender !== undefined ? GENDER_ID[member.gender] : undefined,
+        hotelname:         member.hotel,
+        email:             i === 0 ? data.email : undefined,
+        article:           member.equipment.map(item => ({
+          rentalgroupname: EQUIPMENT_RENTAL_GROUP[item],
+          quantity:        1,
+        })),
+      })),
     },
   });
-
-  const primaryCode = primaryResult.customerresult.er_custcode;
-  const groupCode   = primaryResult.customerresult.er_groupcode;
-
-  // 2. Create additional group members
-  const memberCodes: string[] = [primaryCode];
-  for (const member of members.slice(1)) {
-    const result = await soapCustInsertOrUpdateV2(shopConfig, {
-      customer: {
-        firstname:          member.firstname,
-        lastname:           member.lastname,
-        dateofbirth:        member.dob ? new Date(member.dob) : undefined,
-        hotelname:          member.hotel,
-        heightcm:           member.heightcm,
-        weightkg:           member.weightkg,
-        solemm:             member.solemm,
-        int_isoskiertypeid: member.skillLevel ? skillToEasyrentId(member.skillLevel) : undefined,
-        er_genderid:        member.gender !== undefined ? GENDER_ID[member.gender] : undefined,
-        er_groupcode:       groupCode,
-        languagecode:       langToEasyrent(data.language),
-      },
-    });
-    memberCodes.push(result.customerresult.er_custcode);
-  }
-
-  // 3. Link all members to the group
-  if (members.length > 1) {
-    await soapSetGroupCustomerV2(shopConfig, {
-      customer: memberCodes.map(code => ({ customercode: code, groupcode: groupCode })),
-    });
-  }
-
-  // 4. Create the reservation
-  // TODO: reservationData body must be confirmed against live Easyrent before production.
-  const reservationData = {
-    customerCode: primaryCode,
-    groupCode:    members.length > 1 ? groupCode : undefined,
-    branchId:     shopConfig.branchId,
-    dateFrom:     data.datefrom,
-    dateTo:       data.dateto,
-    positions:    (data.rentalGroupIds ?? []).flatMap(rentalGroupId =>
-      memberCodes.map(code => ({ rentalGroupId, customerCode: code, quantity: 1 })),
-    ),
-  };
-
-  const reservationResult = await restInsertUpdateReservation(shopConfig, reservationData);
   return reservationResult.reservationCode ?? String(reservationResult.reservationId ?? 'N/A');
 }
 
