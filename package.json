@@ -7,7 +7,7 @@
   },
   "scripts": {
     "dev": "tsx watch src/index.ts",
-    "build": "tsc --project tsconfig.json",
+    "build": "tsc --project tsconfig.json && mkdir -p dist/i18n && cp src/i18n/*.json dist/i18n/",
     "start": "node dist/index.js",
     "db:migrate": "psql \"$DATABASE_URL\" -f src/db/schema.sql",
     "typecheck": "tsc --noEmit",
