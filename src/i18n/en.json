@@ -6,6 +6,22 @@
   "branch_prompt": "Please select the branch where you will pick up your equipment:\n1 - Obergurgl Zentrum (Piccardweg 5)\n2 - Hochgurgl (Hochgurglerstraße 16)\n3 - Kressbrunnen (Kressbrunnenweg 6a)\n4 - Pirchhütt (Gurglerstraße 121)\n5 - Längenfeld (Oberlängenfeld 47)",
   "branch_invalid": "Please choose a number from 1 to 5.",
 
+  "season_q": "Which season would you like to book for?",
+  "season_invalid": "Please choose Winter or Summer.",
+  "btn_winter": "Winter",
+  "btn_summer": "Summer",
+
+  "branch_summer_q": "Please select the branch where you will pick up your equipment:",
+  "branch_summer_invalid": "Please choose Längenfeld, Telfs, or Obergurgl.",
+
+  "bike_model_q": "Which bike for {{firstname}}?",
+  "bike_model_invalid": "Please choose Diamant, Premium, or Economy.",
+  "bike_size_q": "Which size for {{firstname}}'s bike?",
+  "bike_size_invalid": "Please choose XS, S, M, or L.",
+  "bike_accessories_q": "Which accessories for {{firstname}}? Enter numbers separated by commas, or \"-\" for none:\n1 - Helmet\n2 - Trailer\n3 - Child Seat",
+  "bike_accessories_invalid": "Please enter valid numbers from 1 to 3, or \"-\" for none.",
+
+
   "email_prompt": "Please enter your email address:",
   "email_invalid": "Please enter a valid email address (e.g. name@example.com).",
 
@@ -153,6 +169,19 @@
   "equipment_item_sleigh": "Sleigh",
   "equipment_item_kids_ski": "Kids Skis",
   "equipment_item_kids_boots": "Kids Boots",
+  "equipment_item_bike_diamant": "Bike Diamant",
+  "equipment_item_bike_premium": "Bike Premium",
+  "equipment_item_bike_economy": "Bike Economy",
+  "equipment_item_bike_helm": "Bike Helmet",
+  "equipment_item_bike_anhanger": "Trailer",
+  "equipment_item_bike_kindersitz": "Child Seat",
+
+  "bike_size_xs": "XS",
+  "bike_size_s":  "S",
+  "bike_size_m":  "M",
+  "bike_size_l":  "L",
+
+  "summary_person_bike_size": "Bike size: {{size}}",
 
   "_comment_interactive": "--- Interactive message bodies (question only, no numbered options) ---",
   "welcome_q": "Welcome to {{shopName}}! Please choose your language:",
@@ -203,5 +232,13 @@
   "btn_done": "Done",
   "btn_confirm": "Confirm",
   "btn_cancel": "Cancel",
-  "btn_select": "Select"
+  "btn_select": "Select",
+  "btn_diamant": "Diamant",
+  "btn_bike_xs": "XS",
+  "btn_bike_s":  "S",
+  "btn_bike_m":  "M",
+  "btn_bike_l":  "L",
+  "btn_laengenfeld": "Längenfeld",
+  "btn_telfs": "Telfs",
+  "btn_obergurgl": "Obergurgl"
 }

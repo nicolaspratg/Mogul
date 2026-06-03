@@ -6,6 +6,22 @@
   "branch_prompt": "Bitte wählen Sie die Filiale, in der Sie die Ausrüstung abholen:\n1 - Obergurgl Zentrum (Piccardweg 5)\n2 - Hochgurgl (Hochgurglerstraße 16)\n3 - Kressbrunnen (Kressbrunnenweg 6a)\n4 - Pirchhütt (Gurglerstraße 121)\n5 - Längenfeld (Oberlängenfeld 47)",
   "branch_invalid": "Bitte wählen Sie eine Nummer von 1 bis 5.",
 
+  "season_q": "Für welche Saison möchten Sie buchen?",
+  "season_invalid": "Bitte wählen Sie Winter oder Sommer.",
+  "btn_winter": "Winter",
+  "btn_summer": "Sommer",
+
+  "branch_summer_q": "Bitte wählen Sie die Filiale, in der Sie die Ausrüstung abholen:",
+  "branch_summer_invalid": "Bitte wählen Sie Längenfeld, Telfs oder Obergurgl.",
+
+  "bike_model_q": "Welches Bike für {{firstname}}?",
+  "bike_model_invalid": "Bitte wählen Sie Diamant, Premium oder Economy.",
+  "bike_size_q": "Welche Größe für {{firstname}}s Bike?",
+  "bike_size_invalid": "Bitte wählen Sie XS, S, M oder L.",
+  "bike_accessories_q": "Welches Zubehör für {{firstname}}? Nummern durch Komma getrennt eingeben, oder \"-\" für keins:\n1 - Helm\n2 - Anhänger\n3 - Kindersitz",
+  "bike_accessories_invalid": "Bitte geben Sie gültige Nummern von 1 bis 3 ein, oder \"-\" für keins.",
+
+
   "email_prompt": "Bitte geben Sie Ihre E-Mail-Adresse ein:",
   "email_invalid": "Bitte geben Sie eine gültige E-Mail-Adresse ein (z. B. name@beispiel.com).",
 
@@ -153,6 +169,19 @@
   "equipment_item_sleigh": "Schlitten",
   "equipment_item_kids_ski": "Kinderskis",
   "equipment_item_kids_boots": "Kinderskischuhe",
+  "equipment_item_bike_diamant": "Bike Diamant",
+  "equipment_item_bike_premium": "Bike Premium",
+  "equipment_item_bike_economy": "Bike Economy",
+  "equipment_item_bike_helm": "Bike Helm",
+  "equipment_item_bike_anhanger": "Anhänger",
+  "equipment_item_bike_kindersitz": "Kindersitz",
+
+  "bike_size_xs": "XS",
+  "bike_size_s":  "S",
+  "bike_size_m":  "M",
+  "bike_size_l":  "L",
+
+  "summary_person_bike_size": "Bike-Größe: {{size}}",
 
   "_comment_interactive": "--- Interaktive Nachrichtentexte (nur Frage, ohne nummerierte Optionen) ---",
   "welcome_q": "Willkommen bei {{shopName}}! Bitte wählen Sie Ihre Sprache:",
@@ -203,5 +232,13 @@
   "btn_done": "Fertig",
   "btn_confirm": "Bestätigen",
   "btn_cancel": "Abbrechen",
-  "btn_select": "Auswählen"
+  "btn_select": "Auswählen",
+  "btn_diamant": "Diamant",
+  "btn_bike_xs": "XS",
+  "btn_bike_s":  "S",
+  "btn_bike_m":  "M",
+  "btn_bike_l":  "L",
+  "btn_laengenfeld": "Längenfeld",
+  "btn_telfs": "Telfs",
+  "btn_obergurgl": "Obergurgl"
 }

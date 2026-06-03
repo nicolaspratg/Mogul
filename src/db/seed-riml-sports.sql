@@ -24,7 +24,7 @@ INSERT INTO shops (
   'TODO_whatsapp_token',
   '83.218.162.16',
   'http://83.218.162.16:11122/wsa/wsa1/wsdl?targetURI=urn:wseasyrent',
-  'http://83.218.162.16:11122/easyrest/rest',
+  'http://83.218.162.16:11122/easyrest/rest/easyrest',
   'bG2wLPacN#',
   1,
   ARRAY['de','en']

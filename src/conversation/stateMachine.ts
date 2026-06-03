@@ -5,9 +5,10 @@
  *
  * Flow:
  *  1. WELCOME           → language selection
- *  2. DATE_FROM         → DATE_TO → BRANCH
- *  3. Per-person loop:
- *     PERSON_NAME       → PERSON_DOB → EQUIPMENT_CATEGORY
+ *  2. SEASON            → winter or summer (gates equipment branches below)
+ *  3. DATE_FROM         → DATE_TO → (summer: BRANCH) → per-person loop
+ *  4. Per-person loop — winter:
+ *     PERSON_NAME       → PERSON_DOB → PERSON_GENDER → EQUIPMENT_CATEGORY
  *     ┌─ Ski:        SKI_SKILL (adults) → SKI_BOOTS → [SKI_BOOTS_TYPE | SKI_SOLE]
  *     │              → SKI_NEED → [SKI_MODEL] → HELMET → [HELMET_TYPE]
  *     │              → [MEASUREMENTS] → HOTEL
@@ -17,14 +18,20 @@
  *        ├─ Touring: TOURING_ITEMS → HELMET → [HELMET_TYPE] → [MEASUREMENTS] → HOTEL
  *        ├─ XC:      XC_TYPE → XC_BOOTS → MEASUREMENTS → HOTEL
  *        └─ Misc:    MISC_ITEM → HOTEL
- *     ADD_PERSON (yes → loop back | no → EMAIL → SPECIAL_REQUESTS → INSURANCE → CONFIRM)
- *  4. CONFIRM → DONE
+ *     Per-person loop — summer:
+ *     PERSON_NAME → PERSON_DOB → PERSON_GENDER
+ *                 → BIKE_MODEL → BIKE_SIZE → BIKE_ACCESSORIES (no hotel)
+ *     ADD_PERSON (yes → loop back
+ *                 | no  → EMAIL → SPECIAL_REQUESTS
+ *                       → (winter: INSURANCE) → CONFIRM)
+ *  5. CONFIRM → DONE
  *
  * Measurement rule: height + weight required when equipment includes any of
  *   ski_*, kids_ski, touring_ski, xc_classic, xc_skating.
  * Skill level: asked upfront for adults in the ski branch.
  * Sole length: asked when customer has their own boots (ski branch).
  * Kids (DOB ≤ 14): skip skill level, one-touch kids ski/boots, no Other branch.
+ * Summer: no measurements, no hotel, no insurance — just bike model + size + accessories.
  */
 
 import { pool } from '../db/pool';
@@ -35,8 +42,10 @@ import { type Gender, GENDER_ID } from '../types/easyrent';
 import {
   EasyrentError,
   type Language,
+  type Season,
   type EquipmentItem,
   type SkillLevel,
+  type BikeSize,
   type GroupMember,
   type ConversationData,
 } from '../types/easyrent';
@@ -81,6 +90,12 @@ const EQUIPMENT_LABEL_KEYS: Record<EquipmentItem, string> = {
   sleigh:                'equipment_item_sleigh',
   kids_ski:              'equipment_item_kids_ski',
   kids_boots:            'equipment_item_kids_boots',
+  bike_diamant:          'equipment_item_bike_diamant',
+  bike_premium:          'equipment_item_bike_premium',
+  bike_economy:          'equipment_item_bike_economy',
+  bike_helm:             'equipment_item_bike_helm',
+  bike_anhanger:         'equipment_item_bike_anhanger',
+  bike_kindersitz:       'equipment_item_bike_kindersitz',
 };
 
 function equipmentLabels(items: EquipmentItem[], language: Language): string {
@@ -100,17 +115,35 @@ function needsMeasurements(items: EquipmentItem[]): boolean {
   return items.some(i => MEASUREMENT_ITEMS.includes(i));
 }
 
+const BIKE_FRAME_ITEMS: EquipmentItem[] = ['bike_diamant', 'bike_premium', 'bike_economy'];
+
+function isBikeFrame(item: EquipmentItem): boolean {
+  return BIKE_FRAME_ITEMS.includes(item);
+}
+
 // ---------------------------------------------------------------------------
 // Branches (example — replace with live Easyrent data when available)
 // ---------------------------------------------------------------------------
 
-const EXAMPLE_BRANCHES = [
+interface BranchEntry { id: number; name: string; address?: string }
+
+const WINTER_BRANCHES: BranchEntry[] = [
   { id: 1, name: 'Obergurgl Zentrum', address: 'Piccardweg 5, 6456 Obergurgl' },
   { id: 2, name: 'Hochgurgl',         address: 'Hochgurglerstraße 16, 6456 Hochgurgl' },
   { id: 3, name: 'Kressbrunnen',      address: 'Kressbrunnenweg 6a, 6456 Obergurgl' },
   { id: 4, name: 'Pirchhütt',         address: 'Gurglerstraße 121, 6456 Obergurgl' },
   { id: 5, name: 'Längenfeld',        address: 'Oberlängenfeld 47, 6444 Längenfeld' },
 ];
+
+const SUMMER_BRANCHES: BranchEntry[] = [
+  { id: 101, name: 'Längenfeld' },
+  { id: 102, name: 'Telfs' },
+  { id: 103, name: 'Obergurgl' },
+];
+
+function branchesForSeason(season?: Season): BranchEntry[] {
+  return season === 'summer' ? SUMMER_BRANCHES : WINTER_BRANCHES;
+}
 
 // ---------------------------------------------------------------------------
 // Mock prices (EUR per rental period — replace with live catalog prices)
@@ -144,6 +177,12 @@ const MOCK_PRICES: Record<EquipmentItem, number> = {
   sleigh:                 15,
   kids_ski:               60,
   kids_boots:             30,
+  bike_diamant:          162,
+  bike_premium:          140,
+  bike_economy:          100,
+  bike_helm:              15,
+  bike_anhanger:          40,
+  bike_kindersitz:        30,
 };
 
 const INSURANCE_RATE_ADULT = 3.50; // € per day per adult
@@ -166,6 +205,7 @@ function calcInsurancePrice(members: GroupMember[], datefrom?: string, dateto?: 
 
 export enum ConversationStep {
   WELCOME            = 'welcome',
+  SEASON             = 'season',
   DATE_FROM          = 'date_from',
   DATE_TO            = 'date_to',
   BRANCH             = 'branch',
@@ -174,6 +214,10 @@ export enum ConversationStep {
   PERSON_DOB         = 'person_dob',
   PERSON_GENDER      = 'person_gender',
   EQUIPMENT_CATEGORY = 'equipment_category',
+  // Summer bike branch
+  BIKE_MODEL         = 'bike_model',
+  BIKE_SIZE          = 'bike_size',
+  BIKE_ACCESSORIES   = 'bike_accessories',
   // Ski branch
   SKI_SKILL          = 'ski_skill',
   SKI_BOOTS          = 'ski_boots',
@@ -375,6 +419,12 @@ const EQUIPMENT_RENTAL_GROUP: Record<EquipmentItem, string> = {
   sleigh:                'Sleigh',
   kids_ski:              'Kids Ski',
   kids_boots:            'Kids Ski Boots',
+  bike_diamant:          'Bike Diamant',
+  bike_premium:          'Bike Premium',
+  bike_economy:          'Bike Economy',
+  bike_helm:             'Bike Helmet',
+  bike_anhanger:         'Bike Trailer',
+  bike_kindersitz:       'Bike Child Seat',
 };
 
 function skillLabel(skill: SkillLevel, language: Language): string {
@@ -430,7 +480,7 @@ function buildSummary(data: InternalData, language: Language): string {
   const lines: string[] = [t(language, 'summary_header'), ''];
 
   if (data.branchId) {
-    const branch = EXAMPLE_BRANCHES.find(b => b.id === data.branchId);
+    const branch = branchesForSeason(data.season).find(b => b.id === data.branchId);
     if (branch) lines.push(t(language, 'summary_branch', { branch: branch.name }));
   }
 
@@ -467,6 +517,9 @@ function buildSummary(data: InternalData, language: Language): string {
     }
     if (m.solemm !== undefined) {
       lines.push(t(language, 'summary_person_sole', { sole: m.solemm }));
+    }
+    if (m.bikeSize) {
+      lines.push(t(language, 'summary_person_bike_size', { size: m.bikeSize.toUpperCase() }));
     }
     if (m.hotel) {
       lines.push(t(language, 'summary_person_hotel', { hotel: m.hotel }));
@@ -527,9 +580,34 @@ function handleLanguageSelection(input: string): StepResult | null {
   }
 
   return {
-    nextStep: ConversationStep.DATE_FROM,
+    nextStep: ConversationStep.SEASON,
     updatedData: { language },
-    reply: t(language, 'date_from_prompt'),
+    reply: {
+      body: t(language, 'season_q'),
+      buttons: [t(language, 'btn_winter'), t(language, 'btn_summer')],
+    } satisfies ButtonReply,
+  };
+}
+
+function handleSeasonSelection(data: InternalData, input: string): StepResult | null {
+  const lower = input.trim().toLowerCase();
+  const lang = data.language;
+  let season: Season;
+  const winterLabel = t(lang, 'btn_winter').toLowerCase();
+  const summerLabel = t(lang, 'btn_summer').toLowerCase();
+
+  if (lower === '1' || lower === 'winter' || lower === winterLabel) {
+    season = 'winter';
+  } else if (lower === '2' || lower === 'sommer' || lower === 'summer' || lower === summerLabel) {
+    season = 'summer';
+  } else {
+    return null;
+  }
+
+  return {
+    nextStep: ConversationStep.DATE_FROM,
+    updatedData: { ...data, season },
+    reply: t(lang, 'date_from_prompt'),
   };
 }
 
@@ -553,19 +631,38 @@ function handleDateTo(data: InternalData, input: string): StepResult | 'invalid'
   today.setHours(0, 0, 0, 0);
   if (new Date(iso) < today) return 'past';
   if (data.datefrom && new Date(iso) <= new Date(data.datefrom)) return 'order';
+  const lang = data.language;
+  const dataWithDate = { ...data, dateto: iso, members: [] };
+
+  if (data.season === 'summer') {
+    return {
+      nextStep: ConversationStep.BRANCH,
+      updatedData: dataWithDate,
+      reply: {
+        body: t(lang, 'branch_summer_q'),
+        buttons: [
+          t(lang, 'btn_laengenfeld'),
+          t(lang, 'btn_telfs'),
+          t(lang, 'btn_obergurgl'),
+        ],
+      } satisfies ButtonReply,
+    };
+  }
+
   return {
     nextStep: ConversationStep.PERSON_NAME,
-    updatedData: { ...data, dateto: iso, members: [] },
-    reply: t(data.language, 'person_first_intro') + '\n' + t(data.language, 'person_name_prompt'),
+    updatedData: dataWithDate,
+    reply: t(lang, 'person_first_intro') + '\n' + t(lang, 'person_name_prompt'),
   };
 }
 
 function handleBranch(data: InternalData, input: string): StepResult | null {
+  const branches = branchesForSeason(data.season);
   const trimmed = input.trim();
-  const byNumber = EXAMPLE_BRANCHES[parseInt(trimmed, 10) - 1];
+  const byNumber = branches[parseInt(trimmed, 10) - 1];
   const byName = byNumber
     ? undefined
-    : EXAMPLE_BRANCHES.find(b => b.name.toLowerCase() === trimmed.toLowerCase());
+    : branches.find(b => b.name.toLowerCase() === trimmed.toLowerCase());
   const branch = byNumber ?? byName;
   if (!branch) return null;
   return {
@@ -594,12 +691,26 @@ function handleSpecialRequests(data: InternalData, input: string): StepResult {
   const text = input.trim();
   const skip = text === '-' || text.toLowerCase() === 'none' || text.toLowerCase() === 'keine';
   const specialRequests = skip ? undefined : text;
+  const lang = data.language;
+  const updated = { ...data, specialRequests };
+
+  if (data.season === 'summer') {
+    const summary = buildSummary(updated, lang);
+    return {
+      nextStep: ConversationStep.CONFIRM,
+      updatedData: updated,
+      reply: {
+        body: `${summary}\n\n${t(lang, 'confirm_prompt')}`,
+        buttons: [t(lang, 'btn_confirm'), t(lang, 'btn_cancel')],
+      } satisfies ButtonReply,
+    };
+  }
+
   const days = calcRentalDays(data.datefrom, data.dateto);
   const totalInsurance = calcInsurancePrice(data.members ?? [], data.datefrom, data.dateto);
-  const lang = data.language;
   return {
     nextStep: ConversationStep.INSURANCE,
-    updatedData: { ...data, specialRequests },
+    updatedData: updated,
     reply: {
       body: t(lang, 'insurance_q', { days: String(days), price: totalInsurance.toFixed(2) }),
       buttons: [t(lang, 'btn_yes'), t(lang, 'btn_no')],
@@ -668,6 +779,18 @@ function handlePersonGender(data: InternalData, input: string): StepResult | nul
   }
 
   const member = { ...data.currentMember, gender };
+
+  if (data.season === 'summer') {
+    return {
+      nextStep: ConversationStep.BIKE_MODEL,
+      updatedData: { ...data, currentMember: member },
+      reply: {
+        body: t(lang, 'bike_model_q', { firstname }),
+        buttons: [t(lang, 'btn_diamant'), t(lang, 'btn_premium'), t(lang, 'btn_economy')],
+      } satisfies ButtonReply,
+    };
+  }
+
   const kid = isKid(member.dob ?? '1900-01-01');
   const equipButtons: string[] = kid
     ? [t(lang, 'btn_ski'), t(lang, 'btn_snowboard')]
@@ -920,6 +1043,93 @@ function handleSnowboardModel(data: InternalData, input: string): StepResult | n
   };
 }
 
+// --- Summer bike branch ---
+
+function handleBikeModel(data: InternalData, input: string): StepResult | null {
+  const lower = input.trim().toLowerCase();
+  const lang = data.language;
+  const itemMap: Record<string, EquipmentItem> = {
+    '1': 'bike_diamant', 'diamant': 'bike_diamant',
+    '2': 'bike_premium', 'premium': 'bike_premium',
+    '3': 'bike_economy', 'economy': 'bike_economy',
+  };
+  const item = itemMap[lower];
+  if (!item) return null;
+
+  const firstname = data.currentMember?.firstname ?? '';
+  const equipment = [...(data.currentMember?.equipment ?? []), item];
+  const member = { ...data.currentMember, equipment };
+  return {
+    nextStep: ConversationStep.BIKE_SIZE,
+    updatedData: { ...data, currentMember: member },
+    reply: {
+      body: t(lang, 'bike_size_q', { firstname }),
+      buttonLabel: t(lang, 'btn_select'),
+      items: [
+        { id: 'xs', title: t(lang, 'bike_size_xs') } satisfies ListItem,
+        { id: 's',  title: t(lang, 'bike_size_s')  } satisfies ListItem,
+        { id: 'm',  title: t(lang, 'bike_size_m')  } satisfies ListItem,
+        { id: 'l',  title: t(lang, 'bike_size_l')  } satisfies ListItem,
+      ],
+    } satisfies ListReply,
+  };
+}
+
+function handleBikeSize(data: InternalData, input: string): StepResult | null {
+  const lower = input.trim().toLowerCase();
+  const sizeMap: Record<string, BikeSize> = {
+    '1': 'xs', 'xs': 'xs',
+    '2': 's',  's':  's',
+    '3': 'm',  'm':  'm',
+    '4': 'l',  'l':  'l',
+  };
+  const size = sizeMap[lower];
+  if (!size) return null;
+
+  const lang = data.language;
+  const firstname = data.currentMember?.firstname ?? '';
+  const member = { ...data.currentMember, bikeSize: size };
+  return {
+    nextStep: ConversationStep.BIKE_ACCESSORIES,
+    updatedData: { ...data, currentMember: member },
+    reply: t(lang, 'bike_accessories_q', { firstname }),
+  };
+}
+
+function handleBikeAccessories(data: InternalData, input: string): StepResult | 'invalid' {
+  const trimmed = input.trim();
+  const lower = trimmed.toLowerCase();
+  const skip = trimmed === '-' || trimmed === '' || ['none', 'no', 'keine', 'keins'].includes(lower);
+
+  const selected: EquipmentItem[] = [];
+  if (!skip) {
+    const itemMap: Record<string, EquipmentItem> = {
+      '1': 'bike_helm',
+      '2': 'bike_anhanger',
+      '3': 'bike_kindersitz',
+    };
+    const parts = trimmed.split(/[\s,]+/).filter(Boolean);
+    if (parts.length === 0) return 'invalid';
+    for (const part of parts) {
+      const item = itemMap[part];
+      if (!item) return 'invalid';
+      if (!selected.includes(item)) selected.push(item);
+    }
+  }
+
+  const equipment = [...(data.currentMember?.equipment ?? []), ...selected];
+  const member = { ...data.currentMember, equipment };
+  const lang = data.language;
+  return {
+    nextStep: ConversationStep.ADD_PERSON,
+    updatedData: { ...data, currentMember: member },
+    reply: {
+      body: t(lang, 'add_person_q'),
+      buttons: [t(lang, 'btn_yes'), t(lang, 'btn_no')],
+    } satisfies ButtonReply,
+  };
+}
+
 // --- Other branch ---
 
 function handleOtherCategory(data: InternalData, input: string): StepResult | null {
@@ -1161,6 +1371,7 @@ async function createEasyrentReservation(
         article:           member.equipment.map(item => ({
           rentalgroupname: EQUIPMENT_RENTAL_GROUP[item],
           quantity:        1,
+          property1:       isBikeFrame(item) && member.bikeSize ? member.bikeSize.toUpperCase() : undefined,
         })),
       })),
     },
@@ -1364,6 +1575,13 @@ async function routeStep(
       break;
     }
 
+    case ConversationStep.SEASON: {
+      const r = handleSeasonSelection(data, input);
+      if (!r) return t(language, 'season_invalid');
+      result = r;
+      break;
+    }
+
     case ConversationStep.DATE_FROM: {
       const r = handleDateFrom(data, input);
       if (r === 'invalid') return t(language, 'date_invalid');
@@ -1383,7 +1601,7 @@ async function routeStep(
 
     case ConversationStep.BRANCH: {
       result = handleBranch(data, input);
-      if (!result) return t(language, 'branch_invalid');
+      if (!result) return t(language, data.season === 'summer' ? 'branch_summer_invalid' : 'branch_invalid');
       break;
     }
 
@@ -1459,6 +1677,25 @@ async function routeStep(
     case ConversationStep.SNOWBOARD_MODEL: {
       result = handleSnowboardModel(data, input);
       if (!result) return t(language, 'snowboard_model_invalid');
+      break;
+    }
+
+    case ConversationStep.BIKE_MODEL: {
+      result = handleBikeModel(data, input);
+      if (!result) return t(language, 'bike_model_invalid');
+      break;
+    }
+
+    case ConversationStep.BIKE_SIZE: {
+      result = handleBikeSize(data, input);
+      if (!result) return t(language, 'bike_size_invalid');
+      break;
+    }
+
+    case ConversationStep.BIKE_ACCESSORIES: {
+      const r = handleBikeAccessories(data, input);
+      if (r === 'invalid') return t(language, 'bike_accessories_invalid');
+      result = r;
       break;
     }
 

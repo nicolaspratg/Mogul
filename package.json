@@ -10,7 +10,9 @@
     "build": "tsc --project tsconfig.json",
     "start": "node dist/index.js",
     "db:migrate": "psql \"$DATABASE_URL\" -f src/db/schema.sql",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test:booking": "tsx src/scripts/bookingTestAgent.ts",
+    "test:booking:mock": "MOCK_EASYRENT=true tsx src/scripts/bookingTestAgent.ts"
   },
   "dependencies": {
     "dotenv": "^17.3.1",

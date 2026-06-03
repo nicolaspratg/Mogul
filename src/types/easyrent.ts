@@ -611,9 +611,11 @@ export interface RestTestAccessParams {
 // ---------------------------------------------------------------------------
 
 export type Language = 'de' | 'en' | 'it';
+export type Season = 'winter' | 'summer';
 export type SkillLevel = 'beginner' | 'intermediate' | 'advanced';
+export type BikeSize = 'xs' | 's' | 'm' | 'l';
 
-/** All rentable equipment items in the winter catalog. */
+/** All rentable equipment items across winter + summer catalogs. */
 export type EquipmentItem =
   // Alpine skis
   | 'ski_factory_test'
@@ -641,14 +643,22 @@ export type EquipmentItem =
   | 'touring_shovel'
   | 'touring_avalanche_bag'
   | 'touring_probe'
-  // Other
+  // Other winter
   | 'helmet_visor'
   | 'helmet_no_visor'
   | 'snowshoes'
   | 'sleigh'
-  // Kids
+  // Kids winter
   | 'kids_ski'
-  | 'kids_boots';
+  | 'kids_boots'
+  // Summer — bikes
+  | 'bike_diamant'
+  | 'bike_premium'
+  | 'bike_economy'
+  // Summer — accessories
+  | 'bike_helm'
+  | 'bike_anhanger'
+  | 'bike_kindersitz';
 
 export type Gender = 'male' | 'female' | 'other';
 
@@ -670,6 +680,7 @@ export interface GroupMember {
   skillLevel?: SkillLevel;
   solemm?: number;         // own-boot sole length in mm (if customer has their own boots)
   hotel?: string;
+  bikeSize?: BikeSize;     // summer only — XS/S/M/L for the selected bike
 }
 
 /**
@@ -678,13 +689,14 @@ export interface GroupMember {
  */
 export interface ConversationData {
   language: Language;
+  season?: Season;       // chosen right after language; gates the equipment branches
   datefrom?: string; // ISO date, e.g. "2025-02-10"
   dateto?: string;
   branchId?: number;     // selected pick-up branch ID
   members?: GroupMember[];
   email?: string;        // primary booker's email
   specialRequests?: string;
-  insurance?: boolean;   // Carefree Protection Package
+  insurance?: boolean;   // Carefree Protection Package (winter only)
   easyrentCustomerCode?: string;
   easyrentGroupCode?: string;
 }
